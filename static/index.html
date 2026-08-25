@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kotak Neo Live Market Server Pro</title>
+    <!-- PWA & Mobile Web App Meta -->
+    <link rel="manifest" href="static/manifest.json">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kotak Pro">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lightweight Charts & QRCode.js -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="logo">
+            <span class="gradient-text">Kotak Neo Pro</span>
+        </div>
+        <div class="header-right">
+            <button id="mobile-connect-btn" class="btn-mobile-qr" style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.35); color:#60a5fa; font-size:12px; font-weight:700; padding:5px 12px; border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:6px;">📱 Mobile Link</button>
+            <div class="status-indicator">
+                <span class="dot" id="ws-status"></span>
+                <span id="ws-text">Disconnected</span>
+            </div>
+            <div class="clock" id="clock">--:--:--</div>
+            <div class="health-badge" id="health-badge">Checking...</div>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="dashboard">
+                    <span class="icon">📊</span> Dashboard
+                </button>
+                <button class="tab-btn" data-tab="analyzer">
+                    <span class="icon">🔍</span> Stock Analyzer
+                </button>
+                <button class="tab-btn" data-tab="signals">
+                    <span class="icon">📈</span> Trade Signals
+                </button>
+                <button class="tab-btn" data-tab="options">
+                    <span class="icon">⛓️</span> Option Chain
+                </button>
+                <button class="tab-btn" data-tab="screener">
+                    <span class="icon">🔎</span> Screener
+                </button>
+                <button class="tab-btn" data-tab="paper">
+                    <span class="icon">💰</span> Paper Trading
+                </button>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <!-- TAB: Dashboard -->
+            <section id="tab-dashboard" class="tab-content active fade-in">
+                <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <h2 style="margin:0;">Market Overview & AI Copilot</h2>
+                        <p class="text-muted" style="margin:4px 0 0 0; font-size:12px;">Live Kotak Neo real-time indices & institutional quantitative AI screening</p>
+                    </div>
+                    <span id="market-status-badge" style="background:rgba(16,185,129,0.15); color:var(--bullish-green); border:1px solid rgba(16,185,129,0.3); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">🟢 Market Live</span>
+                </div>
+
+                <!-- 🤖 Ask AI Smart Search Bar -->
+                <div class="card mt-3" style="background: linear-gradient(135deg, #101328, #181938); border: 1px solid #2d3160; padding: 18px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <span style="font-size:20px;">🤖</span>
+                        <h3 style="margin:0; font-size:15px; color:#fff; font-weight:700;">Ask AI Smart Stock Screener</h3>
+                        <span style="font-size:11px; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); padding:2px 8px; border-radius:12px; font-weight:600; margin-left:auto;">✨ Natural Language Search</span>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-bottom:12px;">
+                        <div style="flex:1; position:relative;">
+                            <input type="text" id="ai-search-input" placeholder="Ask AI: 'Best banking stocks for 5% swing trade' or 'High volume breakout stocks today'..." style="width:100%; background:#0b0c16; border:1px solid #3b3f72; color:#fff; padding:12px 16px; border-radius:6px; font-size:13px; outline:none; transition:border-color 0.2s;" autocomplete="off">
+                        </div>
+                        <button id="ai-search-btn" class="btn" style="background:linear-gradient(135deg, #3b82f6, #6366f1); color:#fff; font-weight:600; padding:10px 20px; border-radius:6px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <span>⚡ Search</span>
+                        </button>
+                    </div>
+                    <!-- Quick Prompt Chips -->
+                    <div class="ai-prompt-chips" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <span style="font-size:11px; color:#a0a6c0;">Quick Prompts:</span>
+                        <button class="ai-chip" data-prompt="find high volume breakout stocks with profit target" style="background:#1e2040; border:1px solid #333866; color:#c7d2fe; font-size:11px; padding:4px 10px; border-radius:14px; cursor:pointer;">🚀 Volume Breakouts</button>
+                        <button class="ai-chip" data-prompt="best oversold stocks for dip buying rebound" style="background:#1e2040; border:1px solid #333866; color:#c7d2fe; font-size:11px; padding:4px 10px; border-radius:14px; cursor:pointer;">💎 Oversold Dip Buys</button>
+                        <button class="ai-chip" data-prompt="top 5 swing trade stocks for this week with 6% target" style="background:#1e2040; border:1px solid #333866; color:#c7d2fe; font-size:11px; padding:4px 10px; border-radius:14px; cursor:pointer;">📈 6% Profit Swings</button>
+                        <button class="ai-chip" data-prompt="top banking stocks breaking out with bullish momentum" style="background:#1e2040; border:1px solid #333866; color:#c7d2fe; font-size:11px; padding:4px 10px; border-radius:14px; cursor:pointer;">🏦 Banking Leaders</button>
+                        <button class="ai-chip" data-prompt="best IT stocks near support with positive MACD" style="background:#1e2040; border:1px solid #333866; color:#c7d2fe; font-size:11px; padding:4px 10px; border-radius:14px; cursor:pointer;">💻 IT Momentum</button>
+                    </div>
+                    <!-- AI Search Dynamic Results Drawer -->
+                    <div id="ai-search-results-box" style="display:none; margin-top:16px; border-top:1px solid #2d3160; padding-top:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <span id="ai-search-interpretation" style="font-size:12px; color:#93c5fd; font-weight:600;"></span>
+                            <button id="ai-search-close" style="background:transparent; border:none; color:#a0a6c0; cursor:pointer; font-size:14px;">✕</button>
+                        </div>
+                        <div id="ai-search-cards-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="index-cards mt-3">
+                    <div class="card index-card" id="idx-nifty">
+                        <h3>NIFTY 50</h3>
+                        <div class="price">--</div>
+                        <div class="change">--</div>
+                    </div>
+                    <div class="card index-card" id="idx-banknifty">
+                        <h3>BANK NIFTY</h3>
+                        <div class="price">--</div>
+                        <div class="change">--</div>
+                    </div>
+                    <div class="card index-card" id="idx-niftyit">
+                        <h3>NIFTY IT</h3>
+                        <div class="price">--</div>
+                        <div class="change">--</div>
+                    </div>
+                </div>
+
+                <!-- 🌅 Daily AI Market Pulse & Top 3 Picks -->
+                <div class="card mt-4" style="background:#111222; border:1px solid #232544; border-radius:10px; padding:18px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:18px;">🌅</span>
+                            <h3 style="margin:0; font-size:16px;">Daily AI Market Pulse & Top 3 Picks</h3>
+                        </div>
+                        <span id="ai-briefing-time" style="font-size:11px; color:#a0a6c0;">Scanned Today</span>
+                    </div>
+                    <p id="ai-briefing-summary" style="font-size:12px; color:#cbd5e1; margin:0 0 14px 0; line-height:1.5;">
+                        Loading institutional market intelligence...
+                    </p>
+                    <div id="ai-top-picks-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px;">
+                        <!-- Generated via JS -->
+                    </div>
+                </div>
+
+                <div class="card market-summary mt-4">
+                    <h3>Recent Alerts</h3>
+                    <div class="ticker" id="alerts-ticker">Waiting for live data...</div>
+                </div>
+            </section>
+
+
+            <!-- TAB: Stock Analyzer -->
+            <section id="tab-analyzer" class="tab-content">
+                <div class="analyzer-header card" style="display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; gap:12px; align-items:center; width:100%;">
+                        <div class="search-container" style="flex:1;">
+                            <input type="text" id="symbol-search" placeholder="Search any Stock, MCX Commodity, Future, Option, or Index (e.g. Crude Oil, Gold Mini, GPPL, Nifty 25000 CE)..." autocomplete="off">
+                            <div class="autocomplete-dropdown" id="search-dropdown"></div>
+                        </div>
+                        <button class="analyze-btn" id="analyze-btn">
+                            <span class="icon">⚡</span> ANALYZE
+                        </button>
+                    </div>
+                    <!-- Multi-Asset Filter Chips -->
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <span style="font-size:11px; color:#a0a6c0; font-weight:600;">Asset Filters:</span>
+                        <button class="search-cat-chip active" data-cat="" style="background:#1e2040; border:1px solid #3b82f6; color:#fff; font-size:11px; padding:3px 10px; border-radius:12px; cursor:pointer;">🌐 All Instruments</button>
+                        <button class="search-cat-chip" data-cat="stock" style="background:#141629; border:1px solid #282c4f; color:#c7d2fe; font-size:11px; padding:3px 10px; border-radius:12px; cursor:pointer;">📈 Stocks (NSE/BSE)</button>
+                        <button class="search-cat-chip" data-cat="commodity" style="background:#141629; border:1px solid #282c4f; color:#f59e0b; font-size:11px; padding:3px 10px; border-radius:12px; cursor:pointer;">🛢️ MCX Commodities</button>
+                        <button class="search-cat-chip" data-cat="index" style="background:#141629; border:1px solid #282c4f; color:#60a5fa; font-size:11px; padding:3px 10px; border-radius:12px; cursor:pointer;">📊 Indices</button>
+                        <button class="search-cat-chip" data-cat="option" style="background:#141629; border:1px solid #282c4f; color:#c084fc; font-size:11px; padding:3px 10px; border-radius:12px; cursor:pointer;">🎯 Options (CE/PE)</button>
+                        <button class="search-cat-chip" data-cat="future" style="background:#141629; border:1px solid #282c4f; color:#38bdf8; font-size:11px; padding:3px 10px; border-radius:12px; cursor:pointer;">⚡ Futures</button>
+                    </div>
+                </div>
+                
+                <div id="analyzer-results" style="display: none;">
+                    <!-- Kotak Style Layout Grid: Embedded Chart + Recommendation -->
+                    <div class="kotak-chart-grid" style="display: grid; grid-template-columns: 1.4fr 0.6fr; gap: 20px; margin-bottom: 20px;">
+                        <!-- LEFT Column: Kotak Neo Multi-Pane Trading Chart -->
+                        <div class="card" style="padding: 0px; display: flex; flex-direction: column; overflow: hidden; background: #0b0b0f; border: 1px solid #20202e;">
+                            <!-- Kotak Style Header Toolbar -->
+                            <div class="kotak-toolbar" style="display: flex; align-items: center; justify-content: space-between; background: #121218; padding: 8px 12px; border-bottom: 1px solid #20202e; flex-wrap: wrap; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-weight: 700; color: #ff5000; font-size: 13px; letter-spacing: 0.5px;">kotak <span style="color: #fff; font-weight: 400;">neo</span></span>
+                                    <span style="color: #2d2d3f;">|</span>
+                                    <div class="timeframe-selectors" style="display: flex; gap: 4px;">
+                                        <button class="analyzer-tf-btn active" data-tf="1d" style="background: transparent; border: none; color: #fff; padding: 4px 8px; font-size: 12px; cursor: pointer; font-weight: 600;">D</button>
+                                        <button class="analyzer-tf-btn" data-tf="1h" style="background: transparent; border: none; color: #a0a6c0; padding: 4px 8px; font-size: 12px; cursor: pointer;">1H</button>
+                                        <button class="analyzer-tf-btn" data-tf="15m" style="background: transparent; border: none; color: #a0a6c0; padding: 4px 8px; font-size: 12px; cursor: pointer;">15m</button>
+                                        <button class="analyzer-tf-btn" data-tf="5m" style="background: transparent; border: none; color: #a0a6c0; padding: 4px 8px; font-size: 12px; cursor: pointer;">5m</button>
+                                    </div>
+                                    <span style="color: #2d2d3f;">|</span>
+                                    <div class="overlay-toggles" style="display: flex; gap: 10px; align-items: center;">
+                                        <label style="display: flex; align-items: center; gap: 3px; font-size: 11px; color: #a0a6c0; cursor: pointer; user-select: none;">
+                                            <input type="checkbox" id="analyzer-toggle-trade" checked style="accent-color: #3b82f6;"> Zones
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 3px; font-size: 11px; color: #a0a6c0; cursor: pointer; user-select: none;">
+                                            <input type="checkbox" id="analyzer-toggle-sr" checked style="accent-color: #10b981;"> S/R
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 3px; font-size: 11px; color: #a0a6c0; cursor: pointer; user-select: none;">
+                                            <input type="checkbox" id="analyzer-toggle-sma" checked style="accent-color: #2962FF;"> MAs
+                                        </label>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <button id="analyzer-buy-btn" style="background: #0f62fe; border: none; color: #fff; font-weight: 600; padding: 4px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.2s;">Buy</button>
+                                    <button id="analyzer-sell-btn" style="background: #ff5000; border: none; color: #fff; font-weight: 600; padding: 4px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.2s;">Sell</button>
+                                    <span style="color: #2d2d3f;">|</span>
+                                    <button class="tool-btn" id="analyzer-draw-tool" style="background: #1c1c28; border: 1px solid #2d2d3f; color: #a0a6c0; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: all 0.2s;">✏️ Draw: OFF</button>
+                                    <button class="zoom-btn" id="analyzer-zoom-in" style="background: transparent; border: none; color: #a0a6c0; cursor: pointer; font-size: 13px; font-weight: 700;">➕</button>
+                                    <button class="zoom-btn" id="analyzer-zoom-out" style="background: transparent; border: none; color: #a0a6c0; cursor: pointer; font-size: 13px; font-weight: 700;">➖</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Left Sidebar + Center Chart Canvas Grid -->
+                            <div style="display: flex; position: relative; flex: 1;">
+                                <!-- Left Drawing Tools Column -->
+                                <div class="kotak-drawing-sidebar" style="width: 40px; background: #121218; border-right: 1px solid #20202e; display: flex; flex-direction: column; align-items: center; padding-top: 15px; gap: 18px;">
+                                    <div class="draw-icon active" id="tool-crosshair" title="Crosshair" style="color: #3b82f6; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s;">✛</div>
+                                    <div class="draw-icon" id="tool-trendline" title="Trend Line" style="color: #a0a6c0; cursor: pointer; font-size: 14px; transition: all 0.2s;">╱</div>
+                                    <div class="draw-icon" id="tool-horizontal" title="Horizontal" style="color: #a0a6c0; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s;">━</div>
+                                    <div class="draw-icon" id="tool-fibonacci" title="Fibonacci" style="color: #a0a6c0; cursor: pointer; font-size: 14px; transition: all 0.2s;">☰</div>
+                                    <div class="draw-icon" id="tool-brush" title="Brush" style="color: #a0a6c0; cursor: pointer; font-size: 14px; transition: all 0.2s;">✎</div>
+                                    <div class="draw-icon" id="tool-text" title="Text" style="color: #a0a6c0; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s;">T</div>
+                                    <div class="draw-icon" id="tool-measure" title="Measure" style="color: #a0a6c0; cursor: pointer; font-size: 14px; transition: all 0.2s;">📏</div>
+                                    <span style="color: #2d2d3f; width: 60%; border-top: 1px solid #20202e; margin: 4px 0;"></span>
+                                    <div class="draw-icon" id="tool-clear" title="Clear All Drawings" style="color: #ef4444; cursor: pointer; font-size: 14px; transition: all 0.2s;">🗑️</div>
+                                </div>
+                                
+                                <!-- Multi-pane Stacked Area -->
+                                <div class="kotak-chart-area" style="flex: 1; display: flex; flex-direction: column; background: #0d0d14;">
+                                    <!-- Pane 1: Candles + Volume (height 260px) -->
+                                    <div style="position: relative; height: 260px; width: 100%;">
+                                        <div id="analyzer-price-pane" style="width: 100%; height: 100%;"></div>
+                                        <div style="position: absolute; top: 10px; left: 15px; z-index: 10; font-size: 11px; color: #a0a6c0; font-family: monospace;" id="kotak-price-legend">--</div>
+                                    </div>
+                                    
+                                    <!-- Pane 2: Stochastic Oscillator (height 80px) -->
+                                    <div style="position: relative; height: 85px; width: 100%; border-top: 1px solid #1a1a24;">
+                                        <div id="analyzer-stoch-pane" style="width: 100%; height: 100%;"></div>
+                                        <div style="position: absolute; top: 5px; left: 15px; z-index: 10; font-size: 10px; color: #ff8c00; font-family: monospace;">Stoch 14 1 3</div>
+                                    </div>
+                                    
+                                    <!-- Pane 3: Relative Strength Index (height 80px) -->
+                                    <div style="position: relative; height: 85px; width: 100%; border-top: 1px solid #1a1a24;">
+                                        <div id="analyzer-rsi-pane" style="width: 100%; height: 100%;"></div>
+                                        <div style="position: absolute; top: 5px; left: 15px; z-index: 10; font-size: 10px; color: #ba55d3; font-family: monospace;">RSI 14</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- RIGHT Column: AI Stock Doctor & Deep Diagnosis -->
+                        <div class="card slide-up" id="analyzer-recommendation-card" style="background: linear-gradient(135deg, #121426, #191b34); border: 1px solid #292d54; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span style="font-size:18px;">🤖</span>
+                                    <div>
+                                        <div style="display:flex; align-items:baseline; gap:8px;">
+                                            <h3 id="analyzer-instrument-title" style="margin:0; font-size:15px; color:#fff; font-weight:700;">AI Stock Doctor & Thesis</h3>
+                                            <span id="analyzer-instrument-ltp" style="font-size:14px; color:var(--bullish-green); font-weight:700;"></span>
+                                        </div>
+                                        <div id="analyzer-instrument-subtitle" style="font-size:11px; color:#94a3b8; font-weight:400; max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+                                        <span id="analyzer-ai-conviction" style="font-size:11px; color:#93c5fd; font-weight:600;">85% High Conviction</span>
+                                    </div>
+                                </div>
+                                <span class="sig-badge" id="analyzer-rec-badge" style="padding:4px 12px; font-weight:700; border-radius:4px; font-size:12px;">BUY</span>
+                            </div>
+
+                            <!-- Levels Grid 1 -->
+                            <div class="grid grid-3 gap-2" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:10px;">
+                                <div class="card" style="background:#0e101c; padding:8px 4px; border-radius:6px; border:1px solid #1f2340; text-align:center;">
+                                    <span class="lbl" style="font-size:10px; color:#94a3b8;">Entry Zone</span>
+                                    <div style="font-size:15px; font-weight:700; color:#60a5fa; margin-top:3px;" id="analyzer-rec-entry">₹0.00</div>
+                                </div>
+                                <div class="card" style="background:#0e101c; padding:8px 4px; border-radius:6px; border:1px solid #1f2340; text-align:center;">
+                                    <span class="lbl" style="font-size:10px; color:#94a3b8;">Target 1</span>
+                                    <div style="font-size:15px; font-weight:700; color:var(--bullish-green); margin-top:3px;" id="analyzer-rec-target">₹0.00</div>
+                                </div>
+                                <div class="card" style="background:#0e101c; padding:8px 4px; border-radius:6px; border:1px solid #1f2340; text-align:center;">
+                                    <span class="lbl" style="font-size:10px; color:#94a3b8;">Stop Loss</span>
+                                    <div style="font-size:15px; font-weight:700; color:var(--bearish-red); margin-top:3px;" id="analyzer-rec-sl">₹0.00</div>
+                                </div>
+                            </div>
+
+                            <!-- Extended Metrics Strip -->
+                            <div style="display:flex; justify-content:space-between; background:#0e101c; padding:6px 12px; border-radius:6px; border:1px solid #1f2340; font-size:11px; margin-bottom:12px; color:#cbd5e1;">
+                                <span>🎯 <strong>Target 2 (Runner):</strong> <span id="analyzer-rec-target2" style="color:var(--bullish-green); font-weight:700;">--</span></span>
+                                <span>⚖️ <strong>R:R:</strong> <span id="analyzer-rec-rr" style="color:#60a5fa; font-weight:700;">1:2.3</span></span>
+                                <span>⏱️ <strong>Horizon:</strong> <span id="analyzer-rec-horizon" style="font-weight:700;">7 Days</span></span>
+                            </div>
+
+                            <!-- Structured AI Context Box -->
+                            <div style="background:#0b0c14; padding:10px; border-radius:6px; border:1px solid #1c2035; font-size:11.5px; color:#cbd5e1; margin-bottom:14px; line-height:1.5; flex:1; max-height:160px; overflow-y:auto;" id="analyzer-rec-reason">
+                                Loading AI trade context...
+                            </div>
+
+                            <div style="display:flex; gap:8px;">
+                                <button id="analyzer-paper-trade-btn" style="flex:1; background:#10b981; border:none; color:#fff; font-weight:700; padding:10px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; transition: all 0.2s;">
+                                    <span>📥 Execute Paper Trade</span>
+                                </button>
+                                <button id="analyzer-draw-levels-btn" style="background:#252945; border:1px solid #3b3f66; color:#c7d2fe; font-weight:600; padding:10px 14px; border-radius:6px; cursor:pointer; font-size:12px; transition:all 0.2s;" title="Draw Target and Stop Loss on Chart">
+                                    <span>🎯 Draw Levels</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="panels-grid">
+                        <!-- Technical Panel -->
+                        <div class="card panel technical-panel slide-up">
+                            <h3>Technical Analysis</h3>
+                            <div class="gauge-container">
+                                <div class="gauge" id="tech-gauge">
+                                    <div class="gauge-value">0</div>
+                                </div>
+                                <div class="signal-badge" id="tech-signal">--</div>
+                            </div>
+                            <div class="indicators-grid" id="indicators-grid">
+                                <!-- Generated via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Fundamental Panel -->
+                        <div class="card panel fundamental-panel slide-up" style="animation-delay: 0.1s;">
+                            <h3>Fundamental Analysis</h3>
+                            <div class="gauge-container">
+                                <div class="gauge" id="fund-gauge">
+                                    <div class="gauge-value">0</div>
+                                </div>
+                                <div class="rating-label" id="fund-rating">--</div>
+                            </div>
+                            <div class="fundamental-stats" id="fundamental-stats">
+                                <!-- Generated via JS -->
+                            </div>
+                            <div class="pros-cons">
+                                <div class="strengths">
+                                    <h4>Strengths</h4>
+                                    <ul id="fund-strengths"></ul>
+                                </div>
+                                <div class="concerns">
+                                    <h4>Concerns</h4>
+                                    <ul id="fund-concerns"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Options Panel -->
+                        <div class="card panel options-panel slide-up" style="animation-delay: 0.2s;">
+                            <h3>Options Analysis</h3>
+                            <div class="options-summary">
+                                <div class="stat"><span class="label">PCR:</span> <span id="opt-pcr">--</span></div>
+                                <div class="stat"><span class="label">Max Pain:</span> <span id="opt-maxpain">--</span></div>
+                            </div>
+                            <h4>Recommended Strategies</h4>
+                            <div class="strategies-list" id="strategies-list">
+                                <!-- Generated via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="analyzer-skeleton" class="skeleton-container" style="display: none;">
+                    <div class="skeleton-card shimmer"></div>
+                    <div class="skeleton-card shimmer"></div>
+                    <div class="skeleton-card shimmer"></div>
+                </div>
+            </section>
+
+            <!-- TAB: Trade Signals -->
+            <section id="tab-signals" class="tab-content">
+                <!-- Manual Instrument Profit Setup Finder & Schedule Status -->
+                <div class="card" style="background: linear-gradient(135deg, #0e1124, #161a36); border: 1px solid #232746; padding: 18px; border-radius: 10px; margin-bottom: 20px; position: relative; z-index: 100; overflow: visible;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 15px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <span>🎯</span> Manual Instrument Profit Setup Finder
+                            </h3>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; color: #94a3b8;">
+                                Enter any stock or F&O instrument to instantly generate high-probability Entry, Target 1, Target 2, and Stop Loss.
+                            </p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; background: rgba(147, 197, 253, 0.08); border: 1px solid #3b4580; padding: 6px 12px; border-radius: 6px;">
+                            <span style="color: #60a5fa;">🌙</span>
+                            <span style="color: #cbd5e1;">Nightly Auto-Scan: <strong style="color: #10b981;">Active (10:00 PM IST)</strong></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 1000; overflow: visible;">
+                        <div style="position: relative; flex: 1; min-width: 260px;">
+                            <input type="text" id="manual-instrument-input" placeholder="Enter stock symbol or name (e.g. GPPL, TATAMOTORS, RELIANCE, TCS, CRUDEOIL)..." style="width: 100%; background: #07080f; border: 1px solid #232746; border-radius: 6px; padding: 10px 14px; color: #fff; font-size: 13px;" autocomplete="off">
+                            <div class="autocomplete-dropdown" id="manual-search-dropdown"></div>
+                        </div>
+                        <button id="manual-find-setup-btn" class="btn" style="background: #0f62fe; color: #fff; font-weight: 700; padding: 10px 18px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                            <span>🎯</span> Find Profit Setup
+                        </button>
+                        <button id="scan-all-markets-btn" class="btn" style="background: #10b981; color: #fff; font-weight: 700; padding: 10px 18px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                            <span>⚡</span> Scan Market Now
+                        </button>
+                    </div>
+                    <!-- Manual setup result card -->
+                    <div id="manual-instrument-result-box" style="display: none; margin-top: 15px;"></div>
+                </div>
+
+                <div class="signals-header">
+                    <h2>Live Trade Signals</h2>
+                    <div class="sub-tabs">
+                        <button class="sub-tab-btn active" data-sigtype="intraday">Intraday</button>
+                        <button class="sub-tab-btn" data-sigtype="shortterm">Short-Term</button>
+                        <button class="sub-tab-btn" data-sigtype="longterm">Long-Term</button>
+                        <button class="sub-tab-btn" data-sigtype="futures">Futures</button>
+                        <button class="sub-tab-btn" data-sigtype="options">Options</button>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <span id="signals-timestamp" style="font-size: 0.8rem; color: var(--text-muted)"></span>
+                        <button id="refresh-signals" class="refresh-btn">↻ Refresh</button>
+                    </div>
+                </div>
+                <div class="signals-grid" id="signals-grid">
+                    <!-- Signals generated here -->
+                </div>
+            </section>
+
+            <!-- TAB: Option Chain -->
+            <section id="tab-options" class="tab-content">
+                <div class="card" style="position:relative; z-index:100; overflow:visible;">
+                    <div class="options-controls" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; position:relative; z-index:1000; overflow:visible;">
+                        <div style="position:relative; flex:1; min-width:200px;">
+                            <input type="text" id="oc-symbol" placeholder="Symbol or Company Name (e.g. NIFTY, GPPL, SBIN, CRUDEOIL)..." autocomplete="off" style="width:100%;">
+                            <div class="autocomplete-dropdown" id="oc-search-dropdown"></div>
+                        </div>
+                        <select id="oc-expiry">
+                            <option value="2026-08-28">2026-08-28</option>
+                            <option value="2026-09-24">2026-09-24</option>
+                        </select>
+                        <button id="load-oc-btn" class="btn">Load</button>
+                        <div id="oc-spot-badge" style="display:none; align-items:center; gap:8px; background:#0b0d1b; border:1px solid #232746; padding:6px 14px; border-radius:6px; font-size:13px;">
+                            <span id="oc-spot-name" style="font-weight:700; color:#fff;"></span>
+                            <span id="oc-spot-ltp" style="font-weight:700; color:var(--bullish-green);"></span>
+                        </div>
+                    </div>
+                    <div class="table-container mt-4">
+                        <table class="oc-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="3" class="calls-header">CALLS</th>
+                                    <th style="text-align: center">STRIKE</th>
+                                    <th colspan="3" class="puts-header">PUTS</th>
+                                </tr>
+                                <tr>
+                                    <th>OI</th><th>Vol</th><th>LTP</th>
+                                    <th style="text-align: center">Price</th>
+                                    <th style="text-align: left">LTP</th><th style="text-align: left">Vol</th><th style="text-align: left">OI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="oc-body">
+                                <tr><td colspan="7" style="text-align:center; padding: 24px;">Enter symbol to load option chain</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: Screener -->
+            <section id="tab-screener" class="tab-content">
+                <div class="screener-header-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                    <div class="screener-controls" style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="scan-btn active" data-scan="top_gainers">🔥 Top Gainers</button>
+                        <button class="scan-btn" data-scan="top_losers">📉 Top Losers</button>
+                        <button class="scan-btn" data-scan="volume_breakout">🚀 Volume Breakout</button>
+                        <button class="scan-btn" data-scan="rsi_oversold">💎 RSI Oversold (Dip Buy)</button>
+                        <button class="scan-btn" data-scan="macd_crossover">📈 MACD Crossover</button>
+                        <button class="scan-btn" data-scan="fifty_two_week_high">🌟 52W High Breakout</button>
+                        <button class="scan-btn" data-scan="fifty_two_week_low">🔄 52W Low Rebound</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span id="screener-timestamp" style="font-size:12px; color:var(--text-muted);">🟢 Live Scanning Active</span>
+                        <button id="screener-scan-now-btn" class="btn btn-sm" style="background:var(--kotak-blue); color:#fff; font-weight:600;">⚡ Scan Now</button>
+                    </div>
+                </div>
+                <div class="card mt-2 table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left">Stock Symbol</th>
+                                <th>LTP (₹)</th>
+                                <th>Day Change</th>
+                                <th>Volume</th>
+                                <th>Profit Target</th>
+                                <th>Setup / Signal</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="screener-results">
+                            <!-- Generated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <!-- TAB: Paper Trading -->
+            <section id="tab-paper" class="tab-content">
+                <div class="dashboard-header card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <h2 style="margin:0;">💰 Virtual Paper Trading Simulator</h2>
+                            <span id="paper-market-status-pill" style="font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35); color:var(--bearish-red);">🔴 NSE/BSE Closed • LTP Frozen at Settlement Close</span>
+                        </div>
+                        <p class="text-muted" style="margin-top:4px;">Test your strategies with 1,000,000 INR virtual capital. When market is closed, LTP stays strictly frozen at official settlement prices.</p>
+                    </div>
+                    <button class="btn btn-danger" id="reset-paper-btn" style="background:#ef4444; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer; color:#fff;">🔄 Reset Capital Balance</button>
+                </div>
+                
+                <div class="grid grid-3 mt-4" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
+                    <div class="card stat-card">
+                        <span class="lbl">Virtual Account Balance</span>
+                        <div class="val text-warning" id="paper-balance-val" style="font-size:24px; font-weight:700; color:var(--warning-amber); margin-top:8px;">₹ 1,000,000.00</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="lbl">Total Portfolio Value</span>
+                        <div class="val text-bull" id="paper-total-val" style="font-size:24px; font-weight:700; color:var(--bullish-green); margin-top:8px;">₹ 1,000,000.00</div>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="lbl">Unrealized Profit & Loss (P&L)</span>
+                        <div class="val" id="paper-pnl-val" style="font-size:24px; font-weight:700; color:#a0a6c0; margin-top:8px;">₹ 0.00</div>
+                    </div>
+                </div>
+
+                <!-- Instant Order Placement Widget -->
+                <div class="card mt-4" style="background: linear-gradient(135deg, #121426, #181b36); border: 1px solid #292d54; padding: 18px; border-radius: 10px; position:relative; z-index:50; overflow:visible;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:20px;">⚡</span>
+                            <div>
+                                <h3 style="margin:0; font-size:15px; color:#fff; font-weight:700;">Instant Virtual Order Placement</h3>
+                                <span style="font-size:12px; color:#94a3b8;">Execute realistic paper trades with live market ticks & automated target/stoploss executions</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button type="button" id="paper-quick-buy-mode" class="btn" style="background:#10b981; color:#fff; font-weight:700; padding:6px 16px; border-radius:6px; border:2px solid #10b981; cursor:pointer;">BUY (LONG)</button>
+                            <button type="button" id="paper-quick-sell-mode" class="btn" style="background:transparent; color:#ef4444; font-weight:700; padding:6px 16px; border-radius:6px; border:2px solid #ef4444; cursor:pointer;">SELL (SHORT)</button>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap:12px; align-items:end; position:relative; z-index:100; overflow:visible;" class="paper-order-grid">
+                        <div style="position:relative; overflow:visible;">
+                            <label style="display:block; font-size:11px; color:#a0a6c0; margin-bottom:4px; font-weight:600;">Instrument / Symbol</label>
+                            <input type="text" id="paper-quick-symbol" placeholder="Search (e.g. RELIANCE, GPPL, CRUDEOIL)..." autocomplete="off" style="width:100%; background:#0e101c; border:1px solid #232746; color:#fff; padding:10px; border-radius:6px; font-weight:600;">
+                            <div class="autocomplete-dropdown" id="paper-quick-dropdown" style="position:absolute; top:100%; left:0; right:0; z-index:9999;"></div>
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:11px; color:#a0a6c0; margin-bottom:4px; font-weight:600;">Quantity</label>
+                            <input type="number" id="paper-quick-qty" value="10" min="1" style="width:100%; background:#0e101c; border:1px solid #232746; color:#fff; padding:10px; border-radius:6px; font-weight:600;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:11px; color:#a0a6c0; margin-bottom:4px; font-weight:600;">Entry Price (₹)</label>
+                            <input type="number" step="any" id="paper-quick-entry" placeholder="Market LTP" style="width:100%; background:#0e101c; border:1px solid #232746; color:#fff; padding:10px; border-radius:6px; font-weight:600;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:11px; color:var(--bullish-green); margin-bottom:4px; font-weight:600;">Target Price (₹)</label>
+                            <input type="number" step="any" id="paper-quick-target" placeholder="Auto (+4%)" style="width:100%; background:#0e101c; border:1px solid rgba(16,185,129,0.3); color:var(--bullish-green); padding:10px; border-radius:6px; font-weight:600;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:11px; color:var(--bearish-red); margin-bottom:4px; font-weight:600;">Stop Loss (₹)</label>
+                            <input type="number" step="any" id="paper-quick-stoploss" placeholder="Auto (-2%)" style="width:100%; background:#0e101c; border:1px solid rgba(239,68,68,0.3); color:var(--bearish-red); padding:10px; border-radius:6px; font-weight:600;">
+                        </div>
+                        <div>
+                            <button type="button" id="paper-quick-submit-btn" class="btn" style="background:#3b82f6; color:#fff; font-weight:700; padding:10px 18px; border-radius:6px; height:42px; display:flex; align-items:center; gap:6px; cursor:pointer; border:none; white-space:nowrap;">
+                                <span>📥 Place Trade</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:#94a3b8;">
+                        <span id="paper-quick-margin-info">Margin Required: <strong style="color:#fff;" id="paper-quick-margin">₹0.00</strong></span>
+                        <span>Available Cash: <strong style="color:var(--bullish-green);" id="paper-quick-avail">₹1,000,000.00</strong></span>
+                    </div>
+                </div>
+
+                <div class="card mt-4 table-container">
+                    <h3>📂 Open Positions</h3>
+                    <table class="data-table" style="width:100%; border-collapse:collapse; margin-top:15px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #2d2d3f; color:#a0a6c0;">
+                                <th style="text-align: left; padding:10px;">Symbol</th>
+                                <th style="padding:10px;">Type</th>
+                                <th style="padding:10px;">Qty</th>
+                                <th style="padding:10px;">Entry Price</th>
+                                <th style="padding:10px;">LTP</th>
+                                <th style="padding:10px;">Target</th>
+                                <th style="padding:10px;">Stoploss</th>
+                                <th style="padding:10px;">Unrealized P&L</th>
+                                <th style="padding:10px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paper-active-positions" style="text-align:center;">
+                            <!-- Generated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card mt-4 table-container">
+                    <h3>📜 Trade History</h3>
+                    <table class="data-table" style="width:100%; border-collapse:collapse; margin-top:15px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #2d2d3f; color:#a0a6c0;">
+                                <th style="text-align: left; padding:10px;">Symbol</th>
+                                <th style="padding:10px;">Type</th>
+                                <th style="padding:10px;">Qty</th>
+                                <th style="padding:10px;">Entry Price</th>
+                                <th style="padding:10px;">Exit Price</th>
+                                <th style="padding:10px;">Realized P&L</th>
+                                <th style="padding:10px;">Status</th>
+                                <th style="padding:10px;">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paper-closed-positions" style="text-align:center;">
+                            <!-- Generated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <footer>
+        <p>Disclaimer: This data is for educational purposes. Not financial advice. Data source: Kotak Neo Pro Server</p>
+    </footer>
+    
+    <!-- Modal for Signal Detailed Analysis & Chart -->
+    <div id="signal-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Signal Analysis</h3>
+                <span class="close-modal" id="close-modal-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-chart-section">
+                    <div class="chart-controls-bar" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #14141e; padding: 8px 12px; border-radius: 8px 8px 0 0; border-bottom: 1px solid #232334; margin-bottom: 5px; gap: 10px;">
+                        <div class="timeframe-selectors" style="display: flex; gap: 6px;">
+                            <button class="tf-btn" data-tf="5m" style="background: #1a1a26; border: 1px solid #2d2d3f; color: #a0a6c0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">5m</button>
+                            <button class="tf-btn" data-tf="15m" style="background: #1a1a26; border: 1px solid #2d2d3f; color: #a0a6c0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">15m</button>
+                            <button class="tf-btn" data-tf="1h" style="background: #1a1a26; border: 1px solid #2d2d3f; color: #a0a6c0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">1H</button>
+                            <button class="tf-btn active" data-tf="1d" style="background: #3b82f6; border: 1px solid #3b82f6; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">1D</button>
+                        </div>
+                        <div class="overlay-toggles" style="display: flex; gap: 12px; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #a0a6c0; cursor: pointer; user-select: none;">
+                                <input type="checkbox" id="toggle-trade-levels" checked style="accent-color: #3b82f6;"> Target Zones
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #a0a6c0; cursor: pointer; user-select: none;">
+                                <input type="checkbox" id="toggle-sr" style="accent-color: #10b981;"> Support/Resistance
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #a0a6c0; cursor: pointer; user-select: none;">
+                                <input type="checkbox" id="toggle-sma" style="accent-color: #2962FF;"> Technical MAs
+                            </label>
+                        </div>
+                        <div class="zoom-selectors" style="display: flex; gap: 6px;">
+                            <button class="tool-btn" id="draw-tool-btn" style="background: #1a1a26; border: 1px solid #2d2d3f; color: #a0a6c0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s;">✏️ Draw Level: OFF</button>
+                            <button class="zoom-btn" id="zoom-in-btn" style="background: #1a1a26; border: 1px solid #2d2d3f; color: #a0a6c0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">➕ Zoom In</button>
+                            <button class="zoom-btn" id="zoom-out-btn" style="background: #1a1a26; border: 1px solid #2d2d3f; color: #a0a6c0; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">➖ Zoom Out</button>
+                        </div>
+                    </div>
+                    <div id="modal-chart-container"></div>
+                </div>
+                <div class="modal-details-section">
+                    <h4>Trade Explanation</h4>
+                    <div id="modal-explanation" class="explanation-box"></div>
+                    
+                    <h4 class="mt-4">Levels & Indicators</h4>
+                    <div class="levels-grid">
+                        <div class="level-item">
+                            <span class="label">Support Levels:</span>
+                            <span id="modal-supports" class="value text-bull"></span>
+                        </div>
+                        <div class="level-item">
+                            <span class="label">Resistance Levels:</span>
+                            <span id="modal-resistances" class="value text-bear"></span>
+                        </div>
+                        <div class="level-item">
+                            <span class="label">Pivot Point:</span>
+                            <span id="modal-pivot" class="value text-warning"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container"></div>
+    <!-- Modal for Executing Paper Trade -->
+    <div id="paper-trade-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>📥 Execute Paper Trade</h3>
+                <span class="close-modal" id="close-paper-modal-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-3">
+                    <label class="lbl mb-1" style="display:block; font-weight:600;">Symbol</label>
+                    <input type="text" id="paper-trade-symbol" class="form-input" readonly style="background:#14141e; border: 1px solid #2d2d3f; width:100%; padding:10px; border-radius:6px; color:#fff;">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="lbl mb-1" style="display:block; font-weight:600;">Direction</label>
+                    <input type="text" id="paper-trade-direction" class="form-input" readonly style="background:#14141e; border: 1px solid #2d2d3f; width:100%; padding:10px; border-radius:6px; font-weight:600;">
+                </div>
+                <div class="grid grid-3 gap-2 mb-3" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
+                    <div>
+                        <label class="lbl mb-1" style="display:block; font-size:12px;">Entry Price</label>
+                        <input type="number" step="any" id="paper-trade-entry" class="form-input" style="background:#14141e; border: 1px solid #2d2d3f; width:100%; padding:8px; border-radius:6px; color:#fff;">
+                    </div>
+                    <div>
+                        <label class="lbl mb-1" style="display:block; font-size:12px;">Target</label>
+                        <input type="number" step="any" id="paper-trade-target" class="form-input" style="background:#14141e; border: 1px solid #2d2d3f; width:100%; padding:8px; border-radius:6px; color:#fff;">
+                    </div>
+                    <div>
+                        <label class="lbl mb-1" style="display:block; font-size:12px;">Stoploss</label>
+                        <input type="number" step="any" id="paper-trade-stoploss" class="form-input" style="background:#14141e; border: 1px solid #2d2d3f; width:100%; padding:8px; border-radius:6px; color:#fff;">
+                    </div>
+                </div>
+                <div class="form-group mb-3" style="margin-bottom:15px;">
+                    <label class="lbl mb-1" style="display:block; font-weight:600;">Quantity (Shares)</label>
+                    <input type="number" id="paper-trade-qty" class="form-input" value="10" min="1" style="background:#14141e; border: 1px solid #2d2d3f; width:100%; padding:10px; border-radius:6px; color:#fff;">
+                </div>
+                
+                <div class="card p-3 mb-4" style="background:#1a1a26; border:1px solid #2d2d3f; padding:15px; border-radius:6px; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; font-size:13px; color:#a0a6c0; margin-bottom:6px;">
+                        <span>Required Virtual Margin:</span>
+                        <span style="font-weight:600; color:#fff;" id="paper-margin-required">₹ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:13px; color:#a0a6c0;">
+                        <span>Available Cash Balance:</span>
+                        <span style="font-weight:600; color:var(--bullish-green);" id="paper-cash-available">₹ 1,000,000.00</span>
+                    </div>
+                </div>
+                
+                <button class="sig-card-action w-100" id="paper-trade-submit-btn" style="width: 100%; justify-content: center; padding: 12px; font-weight:600; border-radius:6px; background:#3b82f6; border:none; color:#fff; cursor:pointer;">
+                    <span>📥 Place Virtual Order</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Mobile Device Access & QR Code -->
+    <div id="mobile-connect-modal" class="modal">
+        <div class="modal-content" style="max-width: 460px; text-align: center;">
+            <div class="modal-header" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">📱</span>
+                    <h3 style="margin: 0; font-size: 16px;">Mobile & Worldwide Remote Access</h3>
+                </div>
+                <span class="close-modal" id="close-mobile-modal-btn">&times;</span>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; align-items: center; padding: 20px;">
+                <!-- Access Mode Toggle -->
+                <div style="display: flex; width: 100%; background: #0c0e1a; border: 1px solid #232746; border-radius: 8px; padding: 3px; margin-bottom: 16px;">
+                    <button type="button" id="mobile-tab-global" style="flex: 1; background: #3b82f6; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                        <span>🌍 Worldwide (4G/5G)</span>
+                    </button>
+                    <button type="button" id="mobile-tab-local" style="flex: 1; background: transparent; color: #94a3b8; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                        <span>🏠 Local Wi-Fi</span>
+                    </button>
+                </div>
+
+                <p id="mobile-desc-text" style="font-size: 12.5px; color: #94a3b8; margin: 0 0 14px 0; line-height: 1.4;">
+                    ✨ <strong>Cloudflare Secure HTTPS</strong>: Open on any phone, anywhere in the world on 4G/5G mobile data.
+                </p>
+                
+                <!-- QR Code Box -->
+                <div style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-flex; justify-content: center; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); min-width: 184px; min-height: 184px;" id="mobile-qrcode-box">
+                    <div id="mobile-qrcode-canvas"></div>
+                </div>
+
+                <!-- URL Display & Copy -->
+                <div style="width: 100%; margin-top: 16px; display: flex; gap: 8px;">
+                    <input type="text" id="mobile-url-input" readonly value="Generating secure worldwide link..." style="flex: 1; background: #0c0e1a; border: 1px solid #232746; color: #60a5fa; font-weight: 700; padding: 10px 12px; border-radius: 6px; font-size: 12px; text-align: center;">
+                    <button id="copy-mobile-url-btn" class="btn" style="background: #3b82f6; color: #fff; font-weight: 600; padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap;">📋 Copy</button>
+                </div>
+
+                <!-- Step-by-Step Instructions -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; margin-top: 14px; text-align: left; width: 100%; font-size: 12px; color: #94a3b8; line-height: 1.6;">
+                    <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">🚀 How to Open on Mobile:</div>
+                    <div id="mobile-step-1">1. Open Camera & point at the QR code above (or paste link into Safari/Chrome).</div>
+                    <div>2. Live ticker, stock analyzer & paper trading load instantly in real-time.</div>
+                    <div>3. Tap <strong>"Add to Home Screen"</strong> in your browser to run fullscreen as an app!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/app.js"></script>
+</body>
+</html>

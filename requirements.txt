@@ -1,0 +1,16 @@
+git+https://github.com/Kotak-Neo/Kotak-neo-api-v2.git
+python-dotenv
+pyotp
+fastapi
+uvicorn[standard]
+websockets
+pandas
+numpy
+ta
+yfinance
+requests
+beautifulsoup4
+aiohttp
+jinja2
+python-multipart
+pytz

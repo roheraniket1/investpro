@@ -1,0 +1,29 @@
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Environment Variables & Credentials
+.env
+*.env.local
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Database & Scrip Master (auto-downloaded on boot)
+data/*.db
+data/*.db-journal
+data/*.log
+*.log
+
+# Cloudflared executable
+cloudflared.exe
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
