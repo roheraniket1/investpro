@@ -74,24 +74,31 @@ class KotakNeoPro {
     }
     
     async checkHealth() {
-        try {
-            const res = await fetch('/health');
-            const data = await res.json();
-            const badge = document.getElementById('health-badge');
-            if (data.status === 'ok') {
-                badge.textContent = 'Server: OK';
-                badge.style.color = 'var(--bullish-green)';
+        const updateBadge = async () => {
+            try {
+                const res = await fetch('/api/health');
+                if (res.ok) {
+                    const data = await res.json();
+                    const badge = document.getElementById('health-badge');
+                    if (badge) {
+                        badge.textContent = 'Server: OK';
+                        badge.style.color = 'var(--bullish-green)';
+                    }
+                } else {
+                    throw new Error('Health check non-200');
+                }
+            } catch (e) {
+                const badge = document.getElementById('health-badge');
+                if (badge) {
+                    badge.textContent = 'Server: Offline';
+                    badge.style.color = 'var(--bearish-red)';
+                }
             }
-        } catch (e) {
-            const badge = document.getElementById('health-badge');
-            badge.textContent = 'Server: ERROR';
-            badge.style.color = 'var(--bearish-red)';
-            
-            // For demo purposes when no backend
-            setTimeout(() => {
-                badge.textContent = 'Server: Mock Mode';
-                badge.style.color = 'var(--warning-amber)';
-            }, 2000);
+        };
+
+        updateBadge();
+        if (!this.healthInterval) {
+            this.healthInterval = setInterval(updateBadge, 5000);
         }
     }
 
@@ -109,7 +116,7 @@ class KotakNeoPro {
                     ticker.textContent = 'Waiting for live data...';
                 }
             } catch (err) {
-                ticker.textContent = '🔔 Live Feed connected. Scanning for new opportunities...';
+                ticker.textContent = '🔔 InvestPro Live Feed connected. Scanning for setups...';
             }
         };
         
@@ -122,40 +129,65 @@ class KotakNeoPro {
         const text = document.getElementById('ws-text');
         
         try {
+            if (this.ws) {
+                try { this.ws.close(); } catch(e) {}
+            }
+
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            this.ws = new WebSocket(`${protocol}//${window.location.host}/ws/live`);
+            const wsUrl = `${protocol}//${window.location.host}/ws/live`;
+            this.ws = new WebSocket(wsUrl);
             
             this.ws.onopen = () => {
-                dot.classList.add('connected');
-                text.textContent = 'Live';
+                if (dot) dot.classList.add('connected');
+                if (text) text.textContent = 'Live';
+                // Send immediate ping
+                try {
+                    this.ws.send(JSON.stringify({ action: 'ping' }));
+                } catch(e) {}
             };
             
             this.ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type === 'paper_alert') {
-                    this.showNotification(data.message, 'success');
-                    this.loadPaperPortfolio();
-                } else {
-                    this.updateLivePrices(data);
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'connected' || data.type === 'pong') {
+                        if (dot) dot.classList.add('connected');
+                        if (text) text.textContent = 'Live';
+                    } else if (data.type === 'paper_alert') {
+                        this.showNotification(data.message, 'success');
+                        this.loadPaperPortfolio();
+                    } else {
+                        this.updateLivePrices(data);
+                    }
+                } catch(err) {
+                    console.error("WS Parse error:", err);
                 }
             };
             
             this.ws.onclose = () => {
-                dot.classList.remove('connected');
-                text.textContent = 'Disconnected';
-                setTimeout(() => this.connectWebSocket(), 5000);
+                if (dot) dot.classList.remove('connected');
+                if (text) text.textContent = 'Disconnected';
+                setTimeout(() => this.connectWebSocket(), 2500);
+            };
+
+            this.ws.onerror = (err) => {
+                if (dot) dot.classList.remove('connected');
+                if (text) text.textContent = 'Disconnected';
             };
         } catch (e) {
-            // Mock mode for UI preview if connection fails
-            dot.classList.add('connected');
-            text.textContent = 'Live (Mock)';
-            setInterval(() => {
-                this.updateLivePrices({
-                    'NIFTY 50': { ltp: 24500 + (Math.random()*20 - 10), chg: (Math.random()*2 - 1) },
-                    'BANK NIFTY': { ltp: 51200 + (Math.random()*50 - 25), chg: (Math.random()*2 - 1) },
-                    'NIFTY IT': { ltp: 39100 + (Math.random()*30 - 15), chg: (Math.random()*2 - 1) }
-                });
-            }, 2000);
+            if (dot) dot.classList.remove('connected');
+            if (text) text.textContent = 'Disconnected';
+            setTimeout(() => this.connectWebSocket(), 3000);
+        }
+
+        // Heartbeat keepalive every 15 seconds
+        if (!this.wsHeartbeat) {
+            this.wsHeartbeat = setInterval(() => {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    try {
+                        this.ws.send(JSON.stringify({ action: 'ping' }));
+                    } catch(e) {}
+                }
+            }, 15000);
         }
     }
 
@@ -2661,82 +2693,104 @@ class KotakNeoPro {
         const modal = document.getElementById('mobile-connect-modal');
         const closeBtn = document.getElementById('close-mobile-modal-btn');
         const copyBtn = document.getElementById('copy-mobile-url-btn');
+        const copyIpBtn = document.getElementById('copy-ip-btn');
         const input = document.getElementById('mobile-url-input');
         const qrContainer = document.getElementById('mobile-qrcode-canvas');
         const tabGlobal = document.getElementById('mobile-tab-global');
+        const tabDirect = document.getElementById('mobile-tab-direct');
         const tabLocal = document.getElementById('mobile-tab-local');
         const descText = document.getElementById('mobile-desc-text');
         const step1Text = document.getElementById('mobile-step-1');
+        const step2Text = document.getElementById('mobile-step-2');
+        const ipBox = document.getElementById('ip-bypass-box');
+        const publicIpText = document.getElementById('public-ip-text');
 
         if (!btn || !modal) return;
 
+        let fixedUrl = "https://investpro.loca.lt";
+        let directUrl = null;
         let localUrl = `http://${window.location.hostname}:8787`;
-        let publicUrl = null;
-        let activeMode = 'global'; // 'global' or 'local'
+        let publicIp = "103.113.2.97";
+        let activeMode = 'fixed'; // 'fixed', 'direct', 'local'
 
         const renderQR = (url) => {
             if (!qrContainer || typeof QRCode === 'undefined') return;
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
                 text: url,
-                width: 175,
-                height: 175,
+                width: 170,
+                height: 170,
                 colorDark: "#0a0a14",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.M
             });
         };
 
-        const updateView = () => {
-            if (activeMode === 'global') {
+        const updateTabs = () => {
+            [tabGlobal, tabDirect, tabLocal].forEach(t => {
+                if (t) {
+                    t.style.background = 'transparent';
+                    t.style.color = '#94a3b8';
+                }
+            });
+
+            if (activeMode === 'fixed') {
                 if (tabGlobal) {
                     tabGlobal.style.background = '#3b82f6';
                     tabGlobal.style.color = '#fff';
                 }
-                if (tabLocal) {
-                    tabLocal.style.background = 'transparent';
-                    tabLocal.style.color = '#94a3b8';
+                if (descText) {
+                    descText.innerHTML = '📌 <strong>Permanent Fixed URL</strong>: This link NEVER changes. Bookmark it once on your phone!';
+                }
+                if (step1Text) step1Text.innerHTML = '1. Open <strong>https://investpro.loca.lt</strong> on your phone (or scan QR).';
+                if (step2Text) {
+                    step2Text.style.display = 'block';
+                    step2Text.innerHTML = `2. If prompted on first visit, enter passcode <strong>${publicIp}</strong> once.`;
+                }
+                if (ipBox) ipBox.style.display = 'flex';
+                if (input) input.value = fixedUrl;
+                renderQR(fixedUrl);
+            } else if (activeMode === 'direct') {
+                if (tabDirect) {
+                    tabDirect.style.background = '#3b82f6';
+                    tabDirect.style.color = '#fff';
                 }
                 if (descText) {
-                    descText.innerHTML = '✨ <strong>Cloudflare Secure HTTPS</strong>: Open on any phone, anywhere in the world on 4G/5G mobile data.';
+                    descText.innerHTML = '⚡ <strong>Direct Cloud Mirror</strong>: Opens instantly with 0 password/passcode checks.';
                 }
-                if (step1Text) {
-                    step1Text.textContent = '1. Open Camera & scan the QR code above (or copy/open link on your phone).';
-                }
-                const urlToShow = publicUrl || 'Generating secure worldwide link...';
+                const urlToShow = directUrl || 'Generating direct mirror link...';
+                if (step1Text) step1Text.innerHTML = '1. Scan QR code or copy direct mirror link to open immediately.';
+                if (step2Text) step2Text.style.display = 'none';
+                if (ipBox) ipBox.style.display = 'none';
                 if (input) input.value = urlToShow;
-                if (publicUrl) renderQR(publicUrl);
+                if (directUrl) renderQR(directUrl);
             } else {
                 if (tabLocal) {
                     tabLocal.style.background = '#3b82f6';
                     tabLocal.style.color = '#fff';
                 }
-                if (tabGlobal) {
-                    tabGlobal.style.background = 'transparent';
-                    tabGlobal.style.color = '#94a3b8';
-                }
                 if (descText) {
-                    descText.innerHTML = '🏠 <strong>Local Wi-Fi Network</strong>: Fast direct connection when your phone is connected to the same home Wi-Fi.';
+                    descText.innerHTML = '🏠 <strong>Local Wi-Fi Network</strong>: Fast direct connection when connected to your home Wi-Fi.';
                 }
-                if (step1Text) {
-                    step1Text.textContent = '1. Connect phone to same Wi-Fi network, then scan QR code or open link.';
-                }
+                if (step1Text) step1Text.innerHTML = '1. Connect phone to same Wi-Fi, then open link or scan QR code.';
+                if (step2Text) step2Text.style.display = 'none';
+                if (ipBox) ipBox.style.display = 'none';
                 if (input) input.value = localUrl;
                 renderQR(localUrl);
             }
         };
 
-        if (tabGlobal) {
-            tabGlobal.onclick = () => {
-                activeMode = 'global';
-                updateView();
-            };
-        }
+        if (tabGlobal) tabGlobal.onclick = () => { activeMode = 'fixed'; updateTabs(); };
+        if (tabDirect) tabDirect.onclick = () => { activeMode = 'direct'; updateTabs(); };
+        if (tabLocal) tabLocal.onclick = () => { activeMode = 'local'; updateTabs(); };
 
-        if (tabLocal) {
-            tabLocal.onclick = () => {
-                activeMode = 'local';
-                updateView();
+        if (copyIpBtn && publicIpText) {
+            copyIpBtn.onclick = () => {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(publicIpText.textContent.trim())
+                        .then(() => this.showNotification("Passcode copied! Paste into mobile browser.", "success"))
+                        .catch(() => this.showNotification("Copied: " + publicIp, "success"));
+                }
             };
         }
 
@@ -2744,28 +2798,22 @@ class KotakNeoPro {
             try {
                 const res = await fetch('/api/mobile/info');
                 const data = await res.json();
+                if (data.fixed_url) fixedUrl = data.fixed_url;
+                if (data.cloudflare_url) directUrl = data.cloudflare_url;
                 if (data.local_url) localUrl = data.local_url;
-                if (data.public_url) {
-                    publicUrl = data.public_url;
+                if (data.public_ip) {
+                    publicIp = data.public_ip;
+                    if (publicIpText) publicIpText.textContent = publicIp;
                 }
-                updateView();
+                updateTabs();
             } catch (err) {
-                updateView();
+                updateTabs();
             }
         };
 
         btn.onclick = () => {
             modal.classList.add('active');
             fetchMobileInfo();
-            // Polling in case tunnel is still creating URL
-            if (!publicUrl) {
-                let attempts = 0;
-                const pollTimer = setInterval(async () => {
-                    attempts++;
-                    await fetchMobileInfo();
-                    if (publicUrl || attempts > 10) clearInterval(pollTimer);
-                }, 1500);
-            }
         };
 
         if (closeBtn) {

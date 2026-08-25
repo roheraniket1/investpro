@@ -113,10 +113,9 @@ async def startup():
     global main_loop
     main_loop = asyncio.get_running_loop()
     logger.info("═" * 60)
-    logger.info("  Kotak Neo Live Market Server Pro — Starting...")
+    logger.info("  InvestPro — Live Market & Paper Trading Terminal")
     logger.info("═" * 60)
 
-    # Download scrip master on startup
     # Download scrip master on startup
     if DOWNLOAD_SCRIP_MASTER_ON_STARTUP:
         threading.Thread(target=_download_master_background, daemon=True).start()
@@ -124,7 +123,7 @@ async def startup():
     # Connect WebSocket feed
     threading.Thread(target=_connect_feed_background, daemon=True).start()
 
-    # Start Cloudflare global public tunnel for worldwide 24/7 mobile access
+    # Start public mobile tunnel (https://investpro.loca.lt)
     threading.Thread(target=_start_tunnel_background, daemon=True).start()
 
     # Start fallback price streamer task
@@ -133,7 +132,7 @@ async def startup():
     # Start daily background scanner
     asyncio.create_task(daily_scan_scheduler())
 
-    logger.info(f"Server running on http://localhost:{PORT}")
+    logger.info(f"InvestPro running on http://localhost:{PORT}")
     logger.info(f"Dashboard at http://localhost:{PORT}/")
 
 
@@ -317,16 +316,17 @@ async def dashboard():
 # Health Check
 # ──────────────────────────────────────────────
 
+@app.get("/api/health")
 @app.get("/health")
 async def health():
     return {
         "status": "ok",
-        "server": "Kotak Neo Live Market Server Pro",
+        "server": "InvestPro Live Market Terminal",
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat(),
         "instruments_count": db.count(),
         "session_active": session.is_active(),
-        "ws_connected": market_feed._connected,
+        "ws_connected": getattr(market_feed, "_connected", True),
         "active_subscriptions": len(subscription_manager.get_active()),
         "ws_clients": len(ws_clients),
     }
@@ -651,10 +651,20 @@ async def get_tick(token: str):
 async def websocket_live(ws: WebSocket):
     """WebSocket endpoint for live price streaming."""
     await ws.accept()
-    logger.info(f"WebSocket client connected. Total: {len(ws_clients) + 1}")
-
     with ws_lock:
         ws_clients.append(ws)
+    logger.info(f"WebSocket client connected. Total clients: {len(ws_clients)}")
+
+    # Send immediate connection ack so client UI marks status Live instantly
+    try:
+        await ws.send_json({
+            "type": "connected",
+            "status": "ok",
+            "server": "InvestPro",
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception:
+        pass
 
     try:
         while True:
@@ -1555,7 +1565,7 @@ async def get_stats():
 
 @app.get("/api/mobile/info")
 async def get_mobile_info():
-    """Get local network & worldwide Cloudflare public HTTPS URLs for mobile devices."""
+    """Get permanent fixed URL (https://investpro.loca.lt) and direct Cloudflare mirror."""
     import socket
     local_ip = "127.0.0.1"
     try:
@@ -1568,23 +1578,28 @@ async def get_mobile_info():
     
     local_url = f"http://{local_ip}:{PORT}"
     
-    public_url = None
+    fixed_url = "https://investpro.loca.lt"
+    cloudflare_url = None
+    public_ip = "103.113.2.97"
     try:
         from tunnel import tunnel_manager
-        public_url = tunnel_manager.get_url()
-        if not public_url and not tunnel_manager.is_running:
-            import threading
-            threading.Thread(target=tunnel_manager.start, daemon=True).start()
+        urls = tunnel_manager.get_urls()
+        fixed_url = urls.get('fixed_url') or "https://investpro.loca.lt"
+        cloudflare_url = urls.get('cloudflare_url')
+        public_ip = urls.get('public_ip') or public_ip
     except Exception:
         pass
         
     return {
         "local_ip": local_ip,
         "port": PORT,
+        "app_name": "InvestPro",
+        "fixed_url": fixed_url,
+        "public_url": fixed_url,
+        "cloudflare_url": cloudflare_url,
+        "public_ip": public_ip,
         "local_url": local_url,
-        "public_url": public_url,
-        "is_tunnel_ready": bool(public_url),
-        "recommended_url": public_url if public_url else local_url,
+        "recommended_url": fixed_url,
         "hostname": socket.gethostname()
     }
 
@@ -1718,5 +1733,5 @@ if __name__ == "__main__":
         port=PORT,
         reload=False,
         log_level="info",
-        ws="wsproto",
+        ws="auto",
     )
