@@ -412,45 +412,48 @@ class SearchEngine:
             else:
                 conditions.append("1=1")
 
-        base_sql = "SELECT * FROM instruments WHERE (" + " AND ".join(conditions) + ")"
+        raw_results = []
+        seen_tokens = set()
 
-        # Add alias boost clause
-        if resolved_sym:
-            base_sql += " OR symbol = ? OR symbol LIKE ? OR trading_symbol LIKE ? OR name LIKE ?"
-            params.extend([resolved_sym, f"{resolved_sym}%", f"{resolved_sym}%", f"%{resolved_sym}%"])
+        def add_rows(cur):
+            for row in cur.fetchall():
+                d = dict(row)
+                tok = d.get('token')
+                if tok and tok not in seen_tokens:
+                    seen_tokens.add(tok)
+                    raw_results.append(d)
 
-        # Apply segment or type filters
-        if segment:
-            base_sql += " AND segment = ?"
-            params.append(segment)
-
-        if instrument_type:
-            base_sql += " AND instrument_type = ?"
-            params.append(instrument_type)
-
-        if category:
-            cat_upper = category.upper()
-            if cat_upper in ['COMMODITY', 'MCX']:
-                base_sql += " AND (exchange = 'MCX' OR segment LIKE '%mcx%')"
-            elif cat_upper in ['STOCK', 'EQUITY']:
-                base_sql += " AND segment IN ('nse_cm', 'bse_cm')"
-            elif cat_upper in ['OPTION', 'OPTIONS']:
-                base_sql += " AND (instrument_type IN ('OPT', 'OPTIDX', 'OPTSTK', 'OPTFUT') OR option_type IN ('CE', 'PE'))"
-            elif cat_upper in ['FUTURE', 'FUTURES']:
-                base_sql += " AND (instrument_type IN ('FUT', 'FUTIDX', 'FUTSTK', 'FUTCOM'))"
-            elif cat_upper in ['INDEX', 'INDICES']:
-                base_sql += " AND (symbol IN ('NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'SENSEX', 'BANKEX', 'MCXBULLDEX', 'MCXENRGDEX'))"
-
-        # Prioritize exact symbol matches & main commodities over deep derivatives in DB query
-        top_sym = resolved_sym or query_upper
-        base_sql += " ORDER BY (CASE WHEN symbol = ? THEN 0 WHEN symbol LIKE ? THEN 1 WHEN exchange = 'MCX' THEN 2 ELSE 3 END) LIMIT 300"
-        params.extend([top_sym, f"{top_sym}%"])
-
+        # Stage 1: Exact symbol match (instant index lookup)
+        search_target = resolved_sym or (words[0] if words else query_upper)
         try:
-            cur = db.conn.execute(base_sql, params)
-            raw_results = [dict(x) for x in cur.fetchall()]
+            cur = db.conn.execute("SELECT * FROM instruments WHERE symbol = ? OR trading_symbol = ? LIMIT 30", (search_target, search_target))
+            add_rows(cur)
         except Exception:
-            raw_results = []
+            pass
+
+        # Stage 2: Prefix symbol match (uses idx_symbol index)
+        if len(raw_results) < 80:
+            try:
+                cur = db.conn.execute("SELECT * FROM instruments WHERE symbol LIKE ? LIMIT 60", (f"{search_target}%",))
+                add_rows(cur)
+            except Exception:
+                pass
+
+        # Stage 3: Trading symbol prefix match (uses idx_trading_symbol index)
+        if len(raw_results) < 80:
+            try:
+                cur = db.conn.execute("SELECT * FROM instruments WHERE trading_symbol LIKE ? LIMIT 60", (f"{search_target}%",))
+                add_rows(cur)
+            except Exception:
+                pass
+
+        # Stage 4: Substring match on name (bounded)
+        if len(raw_results) < 40 and len(search_target) >= 3:
+            try:
+                cur = db.conn.execute("SELECT * FROM instruments WHERE name LIKE ? LIMIT 40", (f"%{search_target}%",))
+                add_rows(cur)
+            except Exception:
+                pass
 
         # 4. Guarantee Popular Primary Stocks & Indices are always prioritized in results
         matching_fallbacks = []
