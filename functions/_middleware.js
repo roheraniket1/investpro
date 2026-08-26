@@ -1,6 +1,6 @@
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const backendHost = "minutes-borders-gone-delegation.trycloudflare.com";
+  const backendHost = "investpro-riyy.onrender.com";
   
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/') || url.pathname === '/health') {
     const targetUrl = new URL(context.request.url);
