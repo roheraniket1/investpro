@@ -4,6 +4,8 @@ class KotakNeoPro {
         this.searchTimeout = null;
         this.currentSymbol = null;
         this.drawingMode = false;
+        this.user = null;
+        this.sessionToken = localStorage.getItem('investpro_session_token') || null;
         
         this.init();
     }
@@ -35,12 +37,232 @@ class KotakNeoPro {
             if (sym && exp) this.loadOptionChain(sym, exp);
         });
 
+        // Initialize User Authentication & Auto-Save profile
+        this.initAuth();
+
         // Initialize paper trading subsystem & live ticker
         this.initPaperTrading();
         this.startPaperLiveTicker();
         
         // Initialize Mobile QR & Connect helper
         this.initMobileConnect();
+    }
+
+
+    getAuthHeaders(customHeaders = {}) {
+        const headers = { 'Content-Type': 'application/json', ...customHeaders };
+        if (this.sessionToken) {
+            headers['Authorization'] = `Bearer ${this.sessionToken}`;
+            headers['X-Session-Token'] = this.sessionToken;
+        }
+        return headers;
+    }
+
+    initAuth() {
+        const authBtn = document.getElementById('auth-btn');
+        const authModal = document.getElementById('auth-modal');
+        const profileModal = document.getElementById('profile-modal');
+        const closeAuthBtn = document.getElementById('close-auth-modal-btn');
+        const closeProfileBtn = document.getElementById('close-profile-modal-btn');
+        const tabLogin = document.getElementById('tab-auth-login');
+        const tabRegister = document.getElementById('tab-auth-register');
+        const nameGroup = document.getElementById('auth-name-group');
+        const submitBtn = document.getElementById('auth-submit-btn');
+        const alertBox = document.getElementById('auth-alert-box');
+        const togglePwBtn = document.getElementById('toggle-pw-btn');
+        const pwInput = document.getElementById('auth-password-input');
+        const mobileInput = document.getElementById('auth-mobile-input');
+        const nameInput = document.getElementById('auth-fullname-input');
+        const resetPortfolioBtn = document.getElementById('btn-reset-user-portfolio');
+        const logoutBtn = document.getElementById('btn-logout-user');
+
+        let authMode = 'login'; // 'login' or 'register'
+
+        const setAuthMode = (mode) => {
+            authMode = mode;
+            if (alertBox) alertBox.style.display = 'none';
+            if (mode === 'login') {
+                if (tabLogin) { tabLogin.classList.add('active'); tabLogin.style.background = '#3b82f6'; tabLogin.style.color = '#fff'; }
+                if (tabRegister) { tabRegister.classList.remove('active'); tabRegister.style.background = 'transparent'; tabRegister.style.color = '#94a3b8'; }
+                if (nameGroup) nameGroup.style.display = 'none';
+                if (submitBtn) submitBtn.textContent = 'Sign In & Access Trading';
+            } else {
+                if (tabRegister) { tabRegister.classList.add('active'); tabRegister.style.background = '#3b82f6'; tabRegister.style.color = '#fff'; }
+                if (tabLogin) { tabLogin.classList.remove('active'); tabLogin.style.background = 'transparent'; tabLogin.style.color = '#94a3b8'; }
+                if (nameGroup) nameGroup.style.display = 'block';
+                if (submitBtn) submitBtn.textContent = 'Create Account (₹10L Capital)';
+            }
+        };
+
+        if (tabLogin) tabLogin.onclick = () => setAuthMode('login');
+        if (tabRegister) tabRegister.onclick = () => setAuthMode('register');
+
+        if (authBtn) {
+            authBtn.onclick = () => {
+                if (this.user && this.sessionToken) {
+                    // Open Profile Modal
+                    if (profileModal) profileModal.style.display = 'flex';
+                } else {
+                    // Open Login/Register Modal
+                    if (authModal) authModal.style.display = 'flex';
+                }
+            };
+        }
+
+        if (closeAuthBtn) closeAuthBtn.onclick = () => { if (authModal) authModal.style.display = 'none'; };
+        if (closeProfileBtn) closeProfileBtn.onclick = () => { if (profileModal) profileModal.style.display = 'none'; };
+
+        if (togglePwBtn && pwInput) {
+            togglePwBtn.onclick = () => {
+                if (pwInput.type === 'password') {
+                    pwInput.type = 'text';
+                    togglePwBtn.textContent = '🔒';
+                } else {
+                    pwInput.type = 'password';
+                    togglePwBtn.textContent = '👁️';
+                }
+            };
+        }
+
+        const updateAuthUI = () => {
+            const displayNameEl = document.getElementById('user-display-name');
+            const avatarCharEl = document.getElementById('profile-avatar-char');
+            const profileNameEl = document.getElementById('profile-name-text');
+            const profileMobileEl = document.getElementById('profile-mobile-text');
+            const profileBalanceEl = document.getElementById('profile-balance-text');
+
+            if (this.user && this.sessionToken) {
+                const firstName = (this.user.full_name || 'Trader').split(' ')[0];
+                const balLakh = (parseFloat(this.user.virtual_balance || 1000000) / 100000).toFixed(1);
+                if (displayNameEl) displayNameEl.textContent = `${firstName} (₹${balLakh}L)`;
+                if (avatarCharEl) avatarCharEl.textContent = firstName.charAt(0).toUpperCase();
+                if (profileNameEl) profileNameEl.textContent = this.user.full_name || 'Trader';
+                if (profileMobileEl) profileMobileEl.textContent = `+91 ${this.user.mobile}`;
+                if (profileBalanceEl) profileBalanceEl.textContent = this.formatCurrency(this.user.virtual_balance || 1000000);
+            } else {
+                if (displayNameEl) displayNameEl.textContent = 'Sign In';
+            }
+        };
+
+        // Form Submit
+        if (submitBtn) {
+            submitBtn.onclick = async () => {
+                const mob = (mobileInput ? mobileInput.value : '').trim();
+                const pw = (pwInput ? pwInput.value : '').trim();
+                const fn = (nameInput ? nameInput.value : '').trim();
+
+                if (!mob || mob.length !== 10) {
+                    if (alertBox) {
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = 'rgba(239,68,68,0.15)';
+                        alertBox.style.color = '#f87171';
+                        alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
+                        alertBox.textContent = 'Please enter a valid 10-digit mobile number.';
+                    }
+                    return;
+                }
+
+                if (!pw || pw.length < 4) {
+                    if (alertBox) {
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = 'rgba(239,68,68,0.15)';
+                        alertBox.style.color = '#f87171';
+                        alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
+                        alertBox.textContent = 'Password must be at least 4 characters.';
+                    }
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Connecting...';
+
+                try {
+                    const endpoint = authMode === 'login' ? '/api/user/login' : '/api/user/register';
+                    const payload = authMode === 'login' ? { mobile: mob, password: pw } : { mobile: mob, password: pw, full_name: fn };
+
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.detail || 'Authentication failed');
+                    }
+
+                    this.sessionToken = data.user.token;
+                    this.user = data.user;
+                    localStorage.setItem('investpro_session_token', data.user.token);
+
+                    updateAuthUI();
+                    if (authModal) authModal.style.display = 'none';
+                    this.showNotification(`Welcome, ${data.user.full_name}! ₹${(data.user.virtual_balance/100000).toFixed(1)}L active.`, 'success');
+                    this.loadPaperPortfolio();
+                } catch (err) {
+                    if (alertBox) {
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = 'rgba(239,68,68,0.15)';
+                        alertBox.style.color = '#f87171';
+                        alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
+                        alertBox.textContent = err.message || 'Authentication error';
+                    }
+                } finally {
+                    submitBtn.disabled = false;
+                    setAuthMode(authMode);
+                }
+            };
+        }
+
+        // Logout
+        if (logoutBtn) {
+            logoutBtn.onclick = async () => {
+                try {
+                    await fetch('/api/user/logout', { method: 'POST', headers: this.getAuthHeaders() });
+                } catch(e) {}
+                this.sessionToken = null;
+                this.user = null;
+                localStorage.removeItem('investpro_session_token');
+                updateAuthUI();
+                if (profileModal) profileModal.style.display = 'none';
+                this.showNotification('Logged out successfully.', 'info');
+                this.loadPaperPortfolio();
+            };
+        }
+
+        // Reset user portfolio
+        if (resetPortfolioBtn) {
+            resetPortfolioBtn.onclick = async () => {
+                if (confirm('Reset your virtual trading balance to ₹10,00,000 and clear active trades?')) {
+                    try {
+                        const res = await fetch('/api/paper/reset', { method: 'POST', headers: this.getAuthHeaders() });
+                        if (res.ok) {
+                            this.showNotification('Portfolio reset to ₹10,00,000.00', 'success');
+                            if (this.user) this.user.virtual_balance = 1000000.0;
+                            updateAuthUI();
+                            if (profileModal) profileModal.style.display = 'none';
+                            this.loadPaperPortfolio();
+                        }
+                    } catch(e) {
+                        this.showNotification('Failed to reset portfolio', 'error');
+                    }
+                }
+            };
+        }
+
+        // Fetch active profile on startup
+        fetch('/api/user/profile', { headers: this.getAuthHeaders() })
+            .then(res => res.json())
+            .then(data => {
+                if (data.is_authenticated && data.user) {
+                    this.user = data.user;
+                    updateAuthUI();
+                } else {
+                    this.user = null;
+                    updateAuthUI();
+                }
+            })
+            .catch(() => {});
     }
 
     initTabs() {
@@ -2509,7 +2731,7 @@ class KotakNeoPro {
         qtyInput.oninput = updateRequiredMargin;
         document.getElementById('paper-trade-entry').oninput = updateRequiredMargin;
         
-        fetch('/api/paper/portfolio')
+        fetch('/api/paper/portfolio', { headers: this.getAuthHeaders() })
             .then(res => res.json())
             .then(data => {
                 if (data.balance !== undefined) {
@@ -2544,7 +2766,7 @@ class KotakNeoPro {
             
             fetch('/api/paper/trade', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders(),
                 body: JSON.stringify(req)
             })
             .then(async res => {
@@ -2565,7 +2787,7 @@ class KotakNeoPro {
 
     async loadPaperPortfolio(isSilent = false) {
         try {
-            const res = await fetch('/api/paper/portfolio');
+            const res = await fetch('/api/paper/portfolio', { headers: this.getAuthHeaders() });
             if (!res.ok) return;
             const data = await res.json();
             
@@ -2699,7 +2921,7 @@ class KotakNeoPro {
     }
 
     closePaperPosition(tradeId) {
-        fetch(`/api/paper/close/${tradeId}`, { method: 'POST' })
+        fetch(`/api/paper/close/${tradeId}`, { method: 'POST', headers: this.getAuthHeaders() })
             .then(async res => {
                 const data = await res.json();
                 if (res.ok) {
@@ -2717,7 +2939,7 @@ class KotakNeoPro {
     resetPaperPortfolio() {
         if (!confirm("Are you sure you want to reset your virtual capital balance to ₹1,000,000.00 and purge all trade history?")) return;
         
-        fetch('/api/paper/reset', { method: 'POST' })
+        fetch('/api/paper/reset', { method: 'POST', headers: this.getAuthHeaders() })
             .then(async res => {
                 const data = await res.json();
                 if (res.ok) {

@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -92,6 +92,21 @@ class AlertConfigRequest(BaseModel):
     enable_browser: bool = True
     enable_telegram: bool = False
 
+
+
+class UserRegisterRequest(BaseModel):
+    mobile: str
+    password: str
+    full_name: Optional[str] = ""
+
+class UserLoginRequest(BaseModel):
+    mobile: str
+    password: str
+
+class UserProfileUpdateRequest(BaseModel):
+    watchlist: Optional[list[str]] = None
+    custom_settings: Optional[dict] = None
+    virtual_balance: Optional[float] = None
 
 class PaperTradeRequest(BaseModel):
     symbol: str
@@ -1326,12 +1341,86 @@ def get_live_paper_price(trade_id: int, symbol: str, entry_price: float) -> tupl
     return new_price, market_open, market_msg
 
 
+
+def get_user_from_req(request: Request) -> Optional[dict]:
+    auth = request.headers.get("Authorization", "")
+    token = None
+    if auth.startswith("Bearer "):
+        token = auth.split(" ", 1)[1].strip()
+    if not token:
+        token = request.query_params.get("token")
+    if not token:
+        token = request.headers.get("X-Session-Token")
+    if token:
+        return db.get_user_by_token(token)
+    return None
+
+@app.post("/api/user/register")
+async def api_user_register(req: UserRegisterRequest):
+    success, msg, user_data = db.register_user(req.mobile, req.password, req.full_name)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"status": "success", "message": msg, "user": user_data}
+
+@app.post("/api/user/login")
+async def api_user_login(req: UserLoginRequest):
+    success, msg, user_data = db.authenticate_user(req.mobile, req.password)
+    if not success:
+        raise HTTPException(status_code=401, detail=msg)
+    return {"status": "success", "message": msg, "user": user_data}
+
+@app.get("/api/user/profile")
+async def api_user_get_profile(request: Request):
+    user = get_user_from_req(request)
+    if not user:
+        return {
+            "is_authenticated": False,
+            "user": {
+                "id": 1,
+                "mobile": "",
+                "full_name": "Guest Trader",
+                "virtual_balance": db.get_paper_balance(1),
+                "watchlist": db.get_user_profile(1).get("watchlist", [])
+            }
+        }
+    return {
+        "is_authenticated": True,
+        "user": user
+    }
+
+@app.post("/api/user/profile")
+async def api_user_update_profile(req: UserProfileUpdateRequest, request: Request):
+    user = get_user_from_req(request)
+    user_id = user["id"] if user else 1
+    db.update_user_profile(
+        user_id=user_id,
+        balance=req.virtual_balance,
+        watchlist=req.watchlist,
+        custom_settings=req.custom_settings
+    )
+    profile = db.get_user_profile(user_id)
+    return {"status": "success", "profile": profile}
+
+@app.post("/api/user/logout")
+async def api_user_logout(request: Request):
+    auth = request.headers.get("Authorization", "")
+    token = None
+    if auth.startswith("Bearer "):
+        token = auth.split(" ", 1)[1].strip()
+    if not token:
+        token = request.query_params.get("token")
+    if token:
+        db.delete_session(token)
+    return {"status": "success", "message": "Logged out successfully"}
+
 @app.get("/api/paper/portfolio")
-async def get_paper_portfolio():
+async def get_paper_portfolio(request: Request):
+    user = get_user_from_req(request)
+    user_id = user["id"] if user else 1
     """Retrieve live virtual cash balance, active positions with market-hours-aware LTP, and closed history."""
     try:
-        active = db.get_active_paper_trades()
-        closed = db.get_closed_paper_trades()
+        active = db.get_active_paper_trades(user_id=user_id)
+        closed = db.get_closed_paper_trades(user_id=user_id)
         
         # 1. Update prices & check automated Target / Stoploss trigger hits
         auto_closed_any = False
@@ -1369,10 +1458,10 @@ async def get_paper_portfolio():
                 logger.info(f"⚡ Automated Paper Execution: {hit_status} on {symbol} @ ₹{ltp:.2f}")
 
         if auto_closed_any:
-            active = db.get_active_paper_trades()
-            closed = db.get_closed_paper_trades()
+            active = db.get_active_paper_trades(user_id=user_id)
+            closed = db.get_closed_paper_trades(user_id=user_id)
 
-        balance = db.get_paper_balance()
+        balance = db.get_paper_balance(user_id=user_id)
         total_pnl = 0.0
         total_value = balance
 
@@ -1438,7 +1527,9 @@ async def get_paper_portfolio():
 
 
 @app.post("/api/paper/trade")
-async def execute_paper_trade(req: PaperTradeRequest):
+async def execute_paper_trade(req: PaperTradeRequest, request: Request):
+    user = get_user_from_req(request)
+    user_id = user["id"] if user else 1
     """Place a virtual paper trade order with live market pricing."""
     symbol = req.symbol.upper().strip()
     try:
@@ -1461,7 +1552,7 @@ async def execute_paper_trade(req: PaperTradeRequest):
         if stoploss_price <= 0:
             stoploss_price = round(entry_price * 0.98, 2) if direction == "BUY" else round(entry_price * 1.02, 2)
 
-        balance = db.get_paper_balance()
+        balance = db.get_paper_balance(user_id=user_id)
         required_margin = entry_price * qty
         
         if required_margin > balance:
@@ -1473,10 +1564,11 @@ async def execute_paper_trade(req: PaperTradeRequest):
             qty=qty,
             entry_price=entry_price,
             target=target_price,
-            stoploss=stoploss_price
+            stoploss=stoploss_price,
+            user_id=user_id
         )
         
-        db.update_paper_balance(balance - required_margin)
+        db.update_paper_balance(balance - required_margin, user_id=user_id)
         
         paper_tick_state[trade_id] = {
             "base_price": entry_price,
@@ -1499,10 +1591,12 @@ async def execute_paper_trade(req: PaperTradeRequest):
 
 
 @app.post("/api/paper/close/{trade_id}")
-async def close_paper_position(trade_id: int):
+async def close_paper_position(trade_id: int, request: Request):
+    user = get_user_from_req(request)
+    user_id = user["id"] if user else 1
     """Manually exit an active paper position at current market price."""
     try:
-        active = db.get_active_paper_trades()
+        active = db.get_active_paper_trades(user_id=user_id)
         target_trade = None
         for t in active:
             if t["id"] == trade_id:
@@ -1516,7 +1610,7 @@ async def close_paper_position(trade_id: int):
         state = paper_tick_state.get(trade_id)
         exit_price = state["current_ltp"] if state else float(target_trade["entry_price"])
         
-        success = db.close_paper_trade(trade_id, exit_price, "SQUARE OFF")
+        success = db.close_paper_trade(trade_id, exit_price, "SQUARE OFF", user_id=user_id)
         if trade_id in paper_tick_state:
             del paper_tick_state[trade_id]
             
@@ -1533,12 +1627,14 @@ async def close_paper_position(trade_id: int):
 
 
 @app.post("/api/paper/reset")
-async def reset_paper_portfolio():
+async def reset_paper_portfolio(request: Request):
     """Reset virtual balance to 1,000,000 INR and purge trade history."""
     try:
         global paper_tick_state
         paper_tick_state.clear()
-        db.reset_paper_trading()
+        user = get_user_from_req(request)
+        user_id = user["id"] if user else 1
+        db.reset_paper_trading(user_id=user_id)
         logger.info("Paper Trading profile reset successfully.")
         return {"status": "success", "detail": "Paper portfolio reset successfully to ₹1,000,000.00"}
     except Exception as e:
