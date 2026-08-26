@@ -4,57 +4,76 @@ export async function onRequest(context) {
   const fallbackHost = "interesting-peer-curtis-loose.trycloudflare.com";
   
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/') || url.pathname === '/health') {
-    const targetUrl = new URL(context.request.url);
-    targetUrl.protocol = "https:";
-    targetUrl.port = "";
+    const isWs = context.request.headers.get("Upgrade") === "websocket";
+    const method = context.request.method;
+    const hasBody = !['GET', 'HEAD'].includes(method);
     
-    const upgradeHeader = context.request.headers.get("Upgrade");
-    if (upgradeHeader === "websocket") {
+    // Read body once as ArrayBuffer so it can be reused safely
+    let bodyBuffer = undefined;
+    if (hasBody && !isWs) {
       try {
-        targetUrl.hostname = primaryHost;
-        const resp = await fetch(targetUrl.toString(), context.request);
-        if (resp && resp.status < 500) return resp;
-      } catch (e) {}
-      targetUrl.hostname = fallbackHost;
-      return fetch(targetUrl.toString(), context.request);
+        bodyBuffer = await context.request.arrayBuffer();
+      } catch (e) {
+        bodyBuffer = undefined;
+      }
     }
     
-    // HTTP API Request - try Render with 3.5s timeout, then fallback
-    try {
-      targetUrl.hostname = primaryHost;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
-      const reqClone = context.request.clone();
-      const hasBody = !['GET', 'HEAD'].includes(context.request.method);
-      const bodyData = hasBody ? await reqClone.arrayBuffer() : undefined;
+    // Helper to make proxied request
+    const proxyTo = async (hostname, timeoutMs = 4000) => {
+      const target = new URL(context.request.url);
+      target.hostname = hostname;
+      target.protocol = "https:";
+      target.port = "";
       
-      const resp = await fetch(new Request(targetUrl.toString(), {
-        method: context.request.method,
-        headers: context.request.headers,
-        body: bodyData,
-        signal: controller.signal
-      }));
-      clearTimeout(timeoutId);
+      const newHeaders = new Headers(context.request.headers);
+      newHeaders.set("Host", hostname);
+      newHeaders.delete("cf-ray");
+      newHeaders.delete("cf-connecting-ip");
+      newHeaders.delete("cf-visitor");
+      
+      if (isWs) {
+        return fetch(target.toString(), {
+          method: method,
+          headers: newHeaders
+        });
+      }
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      try {
+        const resp = await fetch(target.toString(), {
+          method: method,
+          headers: newHeaders,
+          body: bodyBuffer,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return resp;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    };
+    
+    // 1. Try Primary (Render Cloud)
+    try {
+      const resp = await proxyTo(primaryHost, 3500);
       if (resp && resp.status < 500) {
         return resp;
       }
     } catch (e) {
-      // Primary failed or timed out
+      // Primary timed out or building
     }
     
-    // Fallback to active tunnel
+    // 2. Fallback to Active Tunnel
     try {
-      targetUrl.hostname = fallbackHost;
-      const reqClone = context.request.clone();
-      const hasBody = !['GET', 'HEAD'].includes(context.request.method);
-      const bodyData = hasBody ? await reqClone.arrayBuffer() : undefined;
-      return await fetch(new Request(targetUrl.toString(), {
-        method: context.request.method,
-        headers: context.request.headers,
-        body: bodyData
-      }));
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Backend connecting...", status: "connecting" }), {
+      const resp = await proxyTo(fallbackHost, 10000);
+      if (resp) {
+        return resp;
+      }
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Connecting to market server...", status: "connecting" }), {
         status: 503,
         headers: { "Content-Type": "application/json" }
       });

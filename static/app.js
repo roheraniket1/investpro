@@ -272,6 +272,23 @@ class KotakNeoPro {
         if (resetPortfolioBtn) resetPortfolioBtn.onclick = handleResetPortfolio;
         if (btnTabReset) btnTabReset.onclick = handleResetPortfolio;
 
+        const guestExploreBtn = document.getElementById('guest-explore-btn');
+        if (guestExploreBtn) {
+            guestExploreBtn.onclick = () => {
+                if (authModal) authModal.style.display = 'none';
+                this.showNotification('Welcome! Exploring as Guest Trader.', 'info');
+            };
+        }
+
+        const authForm = document.getElementById('auth-form');
+        if (authForm) {
+            authForm.onsubmit = (e) => {
+                e.preventDefault();
+                if (submitBtn) submitBtn.click();
+                return false;
+            };
+        }
+
         // Fetch active profile on startup - If NOT logged in, require login to proceed!
         fetch('/api/user/profile', { headers: this.getAuthHeaders() })
             .then(res => res.json())

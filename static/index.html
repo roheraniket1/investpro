@@ -857,8 +857,8 @@
     </div>
 
     <!-- 🔑 Multi-User Authentication Modal -->
-    <div class="modal" id="auth-modal" style="display:none; position:fixed; z-index:9999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); justify-content:center; align-items:center;">
-        <div class="modal-content" style="max-width: 420px; width: 90%; border: 1.5px solid #3b82f6; border-radius: 16px; background: #0c0e1e; box-shadow: 0 25px 60px rgba(0,0,0,0.9); margin: auto;">
+    <div class="modal" id="auth-modal" style="display:none; position:fixed; z-index:9999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); justify-content:center; align-items:center;">
+        <div class="modal-content" style="max-width: 420px; width: 90%; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; border: 1.5px solid #3b82f6; border-radius: 16px; background: #0c0e1e; box-shadow: 0 25px 60px rgba(0,0,0,0.9); margin: auto;">
             <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 20px;">🔐</span>
@@ -910,16 +910,21 @@
                     </button>
                 </form>
 
-                <p style="text-align: center; font-size: 11px; color: #64748b; margin-top: 14px; margin-bottom: 0;">
+                <p style="text-align: center; font-size: 11px; color: #64748b; margin-top: 14px; margin-bottom: 6px;">
                     🛡️ Auto-saves your ₹10,00,000 virtual balance, open positions, and watchlist across all devices.
                 </p>
+                <div style="text-align: center; margin-top: 8px;">
+                    <button type="button" id="guest-explore-btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 11.5px; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s;">
+                        Continue as Guest &rarr;
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- 👤 User Profile Drawer Modal -->
-    <div class="modal" id="profile-modal" style="display:none; position:fixed; z-index:9999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); justify-content:center; align-items:center;">
-        <div class="modal-content" style="max-width: 440px; width: 90%; border: 1.5px solid #3b82f6; border-radius: 16px; background: #0c0e1e; box-shadow: 0 25px 60px rgba(0,0,0,0.9); margin: auto;">
+    <div class="modal" id="profile-modal" style="display:none; position:fixed; z-index:9999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); justify-content:center; align-items:center;">
+        <div class="modal-content" style="max-width: 440px; width: 90%; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; border: 1.5px solid #3b82f6; border-radius: 16px; background: #0c0e1e; box-shadow: 0 25px 60px rgba(0,0,0,0.9); margin: auto;">
             <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 20px;">👤</span>
