@@ -179,10 +179,13 @@ def _start_tunnel_background():
 
 
 def _download_master_background():
-    """Download scrip master in background thread."""
+    """Download scrip master in background thread only if database is empty."""
     try:
+        if db.count() >= 100000:
+            logger.info(f"Database already contains {db.count()} instruments from seed. Skipping startup download.")
+            return
+        time.sleep(15)
         from scripmaster import download_all
-        time.sleep(2)  # Allow server to start first
         logger.info("Starting scrip master download...")
         download_all()
         logger.info(f"Scrip master download complete. Total instruments: {db.count()}")
@@ -193,7 +196,7 @@ def _download_master_background():
 def _connect_feed_background():
     """Connect market feed in background."""
     try:
-        time.sleep(5)  # Wait for auth and master to settle
+        time.sleep(10)  # Wait for auth and server to settle
         market_feed.connect()
 
         # Register broadcast callback
@@ -207,6 +210,7 @@ def _connect_feed_background():
         subscription_manager.subscribe_index("BANKNIFTY")
     except Exception as e:
         logger.error(f"Market feed connection failed: {e}")
+
 
 
 def broadcast_json_sync(payload):
@@ -1746,8 +1750,8 @@ async def daily_scan_scheduler():
     from analysis.ai_analyzer import ai_analyzer
     sg = SignalGenerator()
     
-    # Wait 5 seconds for startup initialization
-    await asyncio.sleep(5)
+    # Wait 60 seconds after startup so server is completely idle and responsive to HTTP requests
+    await asyncio.sleep(60)
     
     # Initial startup scan to ensure fresh setups on boot (run in worker thread so event loop never blocks)
     try:
@@ -1777,7 +1781,7 @@ async def daily_scan_scheduler():
             # 2. Market Open Scan (Every 15 mins) vs Off-market (Every 5 mins check)
             if is_market_open():
                 logger.info("Market is OPEN: Starting periodic 15-minute live market scan...")
-                sg.scan_and_save_all()
+                await asyncio.to_thread(sg.scan_and_save_all)
                 logger.info("Live market scan complete.")
                 await asyncio.sleep(900)
             else:
@@ -1785,6 +1789,7 @@ async def daily_scan_scheduler():
         except Exception as e:
             logger.error(f"Error in background scanner cycle: {repr(e)}")
             await asyncio.sleep(60)
+
 
 
 async def poll_prices_fallback():
