@@ -783,6 +783,26 @@ class KotakNeoPro {
             dd.appendChild(div);
         });
         dd.style.display = 'block';
+
+        // Smart positioning: on mobile use fixed positioning to escape parent overflow clipping
+        const isMobile = window.innerWidth <= 960;
+        if (isMobile) {
+            const inputEl = dd.previousElementSibling || dd.parentElement.querySelector('input');
+            if (inputEl) {
+                const rect = inputEl.getBoundingClientRect();
+                dd.style.position = 'fixed';
+                dd.style.top = (rect.bottom + 4) + 'px';
+                dd.style.left = rect.left + 'px';
+                dd.style.width = rect.width + 'px';
+                dd.style.right = 'auto';
+            }
+        } else {
+            dd.style.position = 'absolute';
+            dd.style.top = '';
+            dd.style.left = '';
+            dd.style.width = '';
+            dd.style.right = '';
+        }
     }
 
     async analyzeStock(symbol) {
@@ -2783,7 +2803,7 @@ class KotakNeoPro {
 
                 fetch('/api/paper/trade', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: this.getAuthHeaders(),
                     body: JSON.stringify(req)
                 })
                 .then(async res => {

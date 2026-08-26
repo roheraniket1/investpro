@@ -18,12 +18,39 @@ Path("data").mkdir(exist_ok=True)
 class ScripDatabase:
 
     def __init__(self):
+        # Auto-unpack 160,000+ instrument master seed if database is missing or empty
+        from pathlib import Path
+        db_file = Path(DATABASE_PATH)
+        seed_file = Path("data/scrip_master_seed.db.gz")
+        if (not db_file.exists() or db_file.stat().st_size == 0) and seed_file.exists():
+            import gzip, shutil
+            try:
+                Path("data").mkdir(exist_ok=True)
+                with gzip.open(seed_file, 'rb') as f_in:
+                    with open(db_file, 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+            except Exception as e:
+                pass
+
         self.conn = sqlite3.connect(
             DATABASE_PATH,
             check_same_thread=False
         )
-
         self.conn.row_factory = sqlite3.Row
+
+        # Verify instruments count - if 0 and seed exists, unpack
+        try:
+            cur = self.conn.execute("SELECT count(*) as c FROM instruments")
+            if cur.fetchone()["c"] == 0 and seed_file.exists():
+                self.conn.close()
+                import gzip, shutil
+                with gzip.open(seed_file, 'rb') as f_in:
+                    with open(db_file, 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                self.conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+                self.conn.row_factory = sqlite3.Row
+        except Exception:
+            pass
 
         self.create_tables()
 

@@ -100,7 +100,7 @@ def download_segment(segment_name: str) -> bool:
 def download_all():
     """Download scrip master for all configured segments."""
     logger.info("Starting scrip master download for all segments")
-    db.clear_all()
+    # db.clear_all() - preserved to prevent empty state
     success_count = 0
     
     for segment in SEGMENTS:

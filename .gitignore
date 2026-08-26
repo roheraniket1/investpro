@@ -28,3 +28,6 @@ cloudflared.exe
 .DS_Store
 Thumbs.db
 .wrangler/
+
+# Force include pre-built compressed scrip master seed database
+!data/scrip_master_seed.db.gz
