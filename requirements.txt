@@ -1,8 +1,9 @@
-git+https://github.com/Kotak-Neo/Kotak-neo-api-v2.git
+neo_api_client
 python-dotenv
 pyotp
 fastapi
 uvicorn[standard]
+wsproto
 websockets
 pandas
 numpy
