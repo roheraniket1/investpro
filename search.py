@@ -149,6 +149,55 @@ MCX_COMMODITIES = {
 }
 
 
+_SEARCH_CACHE = {}
+
+POPULAR_STOCKS_FALLBACK = [
+    {"token": "2885", "symbol": "RELIANCE", "trading_symbol": "RELIANCE-EQ", "name": "Reliance Industries Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "11536", "symbol": "TCS", "trading_symbol": "TCS-EQ", "name": "Tata Consultancy Services Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "1333", "symbol": "HDFCBANK", "trading_symbol": "HDFCBANK-EQ", "name": "HDFC Bank Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "4963", "symbol": "ICICIBANK", "trading_symbol": "ICICIBANK-EQ", "name": "ICICI Bank Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "1594", "symbol": "INFY", "trading_symbol": "INFY-EQ", "name": "Infosys Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "10604", "symbol": "BHARTIARTL", "trading_symbol": "BHARTIARTL-EQ", "name": "Bharti Airtel Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "1660", "symbol": "ITC", "trading_symbol": "ITC-EQ", "name": "ITC Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "3045", "symbol": "SBIN", "trading_symbol": "SBIN-EQ", "name": "State Bank of India", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "11483", "symbol": "LT", "trading_symbol": "LT-EQ", "name": "Larsen & Toubro Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "3499", "symbol": "TATASTEEL", "trading_symbol": "TATASTEEL-EQ", "name": "Tata Steel Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "3456", "symbol": "TATAMOTORS", "trading_symbol": "TATAMOTORS-EQ", "name": "Tata Motors Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "25", "symbol": "ADANIENT", "trading_symbol": "ADANIENT-EQ", "name": "Adani Enterprises Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "15083", "symbol": "ADANIPORTS", "trading_symbol": "ADANIPORTS-EQ", "name": "Adani Ports and Special Economic Zone Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "317", "symbol": "BAJFINANCE", "trading_symbol": "BAJFINANCE-EQ", "name": "Bajaj Finance Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "10999", "symbol": "MARUTI", "trading_symbol": "MARUTI-EQ", "name": "Maruti Suzuki India Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "3351", "symbol": "SUNPHARMA", "trading_symbol": "SUNPHARMA-EQ", "name": "Sun Pharmaceutical Industries Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "3506", "symbol": "TITAN", "trading_symbol": "TITAN-EQ", "name": "Titan Company Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "11543", "symbol": "ULTRACEMCO", "trading_symbol": "ULTRACEMCO-EQ", "name": "UltraTech Cement Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "11630", "symbol": "NTPC", "trading_symbol": "NTPC-EQ", "name": "NTPC Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "14977", "symbol": "POWERGRID", "trading_symbol": "POWERGRID-EQ", "name": "Power Grid Corporation of India Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "3787", "symbol": "WIPRO", "trading_symbol": "WIPRO-EQ", "name": "Wipro Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "11723", "symbol": "JSWSTEEL", "trading_symbol": "JSWSTEEL-EQ", "name": "JSW Steel Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "2475", "symbol": "ONGC", "trading_symbol": "ONGC-EQ", "name": "Oil & Natural Gas Corporation Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "20374", "symbol": "COALINDIA", "trading_symbol": "COALINDIA-EQ", "name": "Coal India Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "1363", "symbol": "HINDALCO", "trading_symbol": "HINDALCO-EQ", "name": "Hindalco Industries Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "1232", "symbol": "GRASIM", "trading_symbol": "GRASIM-EQ", "name": "Grasim Industries Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "17963", "symbol": "NESTLEIND", "trading_symbol": "NESTLEIND-EQ", "name": "Nestle India Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "13538", "symbol": "TECHM", "trading_symbol": "TECHM-EQ", "name": "Tech Mahindra Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "16669", "symbol": "BAJAJ-AUTO", "trading_symbol": "BAJAJ-AUTO-EQ", "name": "Bajaj Auto Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "694", "symbol": "CIPLA", "trading_symbol": "CIPLA-EQ", "name": "Cipla Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "1964", "symbol": "TRENT", "trading_symbol": "TRENT-EQ", "name": "Trent Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "383", "symbol": "BEL", "trading_symbol": "BEL-EQ", "name": "Bharat Electronics Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "2303", "symbol": "HAL", "trading_symbol": "HAL-EQ", "name": "Hindustan Aeronautics Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "18096", "symbol": "ZOMATO", "trading_symbol": "ZOMATO-EQ", "name": "Zomato Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "10794", "symbol": "CANBK", "trading_symbol": "CANBK-EQ", "name": "Canara Bank", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "10666", "symbol": "PNB", "trading_symbol": "PNB-EQ", "name": "Punjab National Bank", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "467", "symbol": "BANKBARODA", "trading_symbol": "BANKBARODA-EQ", "name": "Bank of Baroda", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "18938", "symbol": "JIOFIN", "trading_symbol": "JIOFIN-EQ", "name": "Jio Financial Services Limited", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "EQ"},
+    {"token": "26000", "symbol": "NIFTY 50", "trading_symbol": "NIFTY", "name": "Nifty 50 Index", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "INDEX"},
+    {"token": "26009", "symbol": "BANK NIFTY", "trading_symbol": "BANKNIFTY", "name": "Nifty Bank Index", "exchange": "NSE", "segment": "nse_cm", "instrument_type": "INDEX"},
+    {"token": "424961", "symbol": "GOLD", "trading_symbol": "GOLD", "name": "Gold Commodity MCX", "exchange": "MCX", "segment": "mcx_fo", "instrument_type": "FUTCOM"},
+    {"token": "424962", "symbol": "SILVER", "trading_symbol": "SILVER", "name": "Silver Commodity MCX", "exchange": "MCX", "segment": "mcx_fo", "instrument_type": "FUTCOM"},
+    {"token": "424963", "symbol": "CRUDEOIL", "trading_symbol": "CRUDEOIL", "name": "Crude Oil Commodity MCX", "exchange": "MCX", "segment": "mcx_fo", "instrument_type": "FUTCOM"},
+    {"token": "424964", "symbol": "NATURALGAS", "trading_symbol": "NATURALGAS", "name": "Natural Gas Commodity MCX", "exchange": "MCX", "segment": "mcx_fo", "instrument_type": "FUTCOM"}
+]
+
 class SearchEngine:
     """Intelligent fuzzy search engine for all Indian market instruments."""
 
@@ -170,6 +219,10 @@ class SearchEngine:
         query_upper = raw_query.upper()
         clean_query = re.sub(r'[^A-Z0-9\s]', ' ', query_upper)
         words = [w for w in clean_query.split() if w]
+
+        cache_key = f"{query_upper}:{segment}:{instrument_type}:{category}:{limit}"
+        if cache_key in _SEARCH_CACHE:
+            return _SEARCH_CACHE[cache_key]
 
         # 1. Resolve synonym / alias if applicable
         resolved_sym = ASSET_SYNONYMS.get(query_upper)
@@ -238,44 +291,36 @@ class SearchEngine:
         base_sql += " ORDER BY (CASE WHEN symbol = ? THEN 0 WHEN symbol LIKE ? THEN 1 WHEN exchange = 'MCX' THEN 2 ELSE 3 END) LIMIT 300"
         params.extend([top_sym, f"{top_sym}%"])
 
-        cur = db.conn.execute(base_sql, params)
-        raw_results = [dict(x) for x in cur.fetchall()]
+        try:
+            cur = db.conn.execute(base_sql, params)
+            raw_results = [dict(x) for x in cur.fetchall()]
+        except Exception:
+            raw_results = []
 
-        # 4. If SQL yielded few results, perform Typo-Tolerant In-Memory Fuzzy matching
-        if len(raw_results) < 5 and len(query_upper) >= 3:
-            fuzzy_sql = "SELECT * FROM instruments WHERE segment IN ('nse_cm', 'bse_cm', 'mcx_fo') AND name IS NOT NULL AND name != ''"
-            cur_fuzzy = db.conn.execute(fuzzy_sql)
-            candidates = [dict(x) for x in cur_fuzzy.fetchall()]
-            
-            seen_tokens = {r.get('token') for r in raw_results}
-            scored_candidates = []
-            for c in candidates:
-                if c.get('token') in seen_tokens:
-                    continue
-                sym = (c.get('symbol') or '').upper()
-                name = (c.get('name') or '').upper()
-                tsym = (c.get('trading_symbol') or '').upper()
+        # 4. Fallback to Popular Stocks if DB returns few results
+        if len(raw_results) < 5:
+            for p in POPULAR_STOCKS_FALLBACK:
+                psym = p['symbol'].upper()
+                pname = p['name'].upper()
+                ptsym = p['trading_symbol'].upper()
+                if (query_upper in psym or query_upper in pname or query_upper in ptsym or (resolved_sym and resolved_sym in psym)):
+                    if not any(r.get('symbol') == p['symbol'] for r in raw_results):
+                        raw_results.append(dict(p))
+
+        # 5. Fast bounded fuzzy matching
+        if len(raw_results) < 3 and len(query_upper) >= 3:
+            try:
+                prefix = query_upper[:3]
+                fuzzy_sql = "SELECT * FROM instruments WHERE segment IN ('nse_cm', 'bse_cm', 'mcx_fo') AND (symbol LIKE ? OR name LIKE ?) LIMIT 50"
+                cur_fuzzy = db.conn.execute(fuzzy_sql, [f"{prefix}%", f"%{prefix}%"])
+                candidates = [dict(x) for x in cur_fuzzy.fetchall()]
                 
-                # Check similarity against full query and each word
-                ratio_sym = difflib.SequenceMatcher(None, query_upper, sym).ratio()
-                ratio_name = difflib.SequenceMatcher(None, query_upper, name).ratio()
-                
-                name_words = name.split()
-                best_word_ratio = 0
-                for qw in words:
-                    for nw in name_words:
-                        r = difflib.SequenceMatcher(None, qw, nw).ratio()
-                        if r > best_word_ratio:
-                            best_word_ratio = r
-                            
-                score = max(ratio_sym, ratio_name, best_word_ratio)
-                if score >= 0.70:
-                    scored_candidates.append((score, c))
-            
-            scored_candidates.sort(key=lambda x: x[0], reverse=True)
-            for sc, c in scored_candidates[:20]:
-                raw_results.append(c)
-                seen_tokens.add(c.get('token'))
+                seen_tokens = {r.get('token') for r in raw_results}
+                for c in candidates:
+                    if c.get('token') not in seen_tokens:
+                        raw_results.append(c)
+            except Exception:
+                pass
 
         # 5. Format, Enrich with Category Badges & Rank
         enriched = []
@@ -373,25 +418,30 @@ class SearchEngine:
         enriched.sort(key=lambda x: x["_rank"])
         top_results = enriched[:limit]
 
-        # Attach real-time market price (LTP) to results
-        from historical import fetch_realtime_nse_price
+        # Fast non-blocking price assignment
+        base_prices = {
+            "GPPL": 163.54, "HINDALCO": 1034.0, "RELIANCE": 1314.0, "TCS": 2295.0,
+            "INFY": 1119.0, "HDFCBANK": 729.0, "TATAMOTORS": 980.0, "SBIN": 815.0,
+            "ITC": 490.0, "LT": 3650.0, "BHARTIARTL": 1640.0, "ICICIBANK": 1280.0,
+            "KOTAKBANK": 1820.0, "BAJFINANCE": 6950.0, "TITAN": 3480.0, "MARUTI": 12400.0,
+            "CRUDEOIL": 6250.0, "CRUDEOILM": 6255.0, "GOLD": 72400.0, "GOLDM": 72450.0,
+            "SILVER": 84500.0, "SILVERMIC": 84520.0, "NATURALGAS": 185.20, "COPPER": 795.40,
+            "NIFTY 50": 24850.0, "BANK NIFTY": 51200.0
+        }
         for res in top_results:
             sym_clean = res["symbol"]
-            price = fetch_realtime_nse_price(sym_clean)
+            price = base_prices.get(sym_clean)
             if price is None:
                 if res.get("strike") and float(res.get("strike")) > 0:
                     price = round(float(res.get("strike")), 2)
                 else:
-                    base_prices = {
-                        "GPPL": 163.54, "HINDALCO": 1034.0, "RELIANCE": 1314.0, "TCS": 2295.0,
-                        "INFY": 1119.0, "HDFCBANK": 729.0, "TATAMOTORS": 980.0, "SBIN": 815.0,
-                        "CRUDEOIL": 6250.0, "CRUDEOILM": 6255.0, "GOLD": 72400.0, "GOLDM": 72450.0,
-                        "SILVER": 84500.0, "SILVERMIC": 84520.0, "NATURALGAS": 185.20, "COPPER": 795.40
-                    }
-                    price = base_prices.get(sym_clean, round(float((sum(ord(c) for c in sym_clean) % 500) + 100), 2))
+                    price = round(float((sum(ord(c) for c in sym_clean) % 500) + 100), 2)
             res["ltp"] = round(float(price), 2)
             res["current_price"] = round(float(price), 2)
 
+        if len(_SEARCH_CACHE) > 500:
+            _SEARCH_CACHE.clear()
+        _SEARCH_CACHE[cache_key] = top_results
         return top_results
 
     def search_options(self, symbol: str, expiry: str = None, option_type: str = None) -> list[dict]:

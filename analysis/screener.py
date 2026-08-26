@@ -18,12 +18,32 @@ SCREENER_UNIVERSE = [
     "IDFCFIRSTB", "JIOFIN"
 ]
 
+import time
+
+_CACHE_DFS = {}
+_CACHE_TIMESTAMP = 0
+_CACHE_TTL = 180  # 3 minutes cache for instant millisecond responses
+_CACHE_RESULTS = {}
+
 class Screener:
     def __init__(self, universe=None):
         self.universe = universe or SCREENER_UNIVERSE
 
     def _get_universe_dfs(self) -> dict:
-        return batch_download(self.universe, period='6mo', interval='1d')
+        global _CACHE_DFS, _CACHE_TIMESTAMP
+        now = time.time()
+        if _CACHE_DFS and (now - _CACHE_TIMESTAMP < _CACHE_TTL):
+            return _CACHE_DFS
+            
+        try:
+            dfs = batch_download(self.universe, period='6mo', interval='1d')
+            if dfs:
+                _CACHE_DFS = dfs
+                _CACHE_TIMESTAMP = now
+                return _CACHE_DFS
+        except Exception:
+            pass
+        return _CACHE_DFS or {}
 
     def _format_vol(self, vol: float) -> str:
         if vol >= 10_000_000:

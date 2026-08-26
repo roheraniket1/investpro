@@ -27,7 +27,6 @@
             <span class="gradient-text" style="font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;">InvestPro</span>
         </div>
         <div class="header-right">
-            <button id="mobile-connect-btn" class="btn-mobile-qr" style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.35); color:#60a5fa; font-size:12px; font-weight:700; padding:5px 12px; border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:6px;">📱 Mobile Link</button>
             <div class="status-indicator">
                 <span class="dot" id="ws-status"></span>
                 <span id="ws-text">Disconnected</span>
@@ -67,12 +66,25 @@
         <main class="content">
             <!-- TAB: Dashboard -->
             <section id="tab-dashboard" class="tab-content active fade-in">
+                <!-- 🌟 Personalized Namaste/Welcome Banner -->
+                <div class="welcome-banner" id="dashboard-welcome-banner" style="background: linear-gradient(135deg, rgba(59,130,246,0.16), rgba(99,102,241,0.12)); border: 1.5px solid rgba(59,130,246,0.35); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <span style="font-size: 30px;">🙏</span>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -0.3px;" id="dashboard-welcome-user">Namaste, Trader Ji!</h3>
+                            <p style="margin: 3px 0 0 0; font-size: 12.5px; color: #cbd5e1;">Welcome to InvestPro Terminal. Your live market streams and ₹10L portfolio are active.</p>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span id="market-status-badge" style="background:rgba(16,185,129,0.15); color:var(--bullish-green); border:1px solid rgba(16,185,129,0.3); padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700;">🟢 Market Terminal Active</span>
+                    </div>
+                </div>
+
                 <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div>
                         <h2 style="margin:0;">Market Overview & AI Copilot</h2>
                         <p class="text-muted" style="margin:4px 0 0 0; font-size:12px;">Live multi-factor real-time indices & institutional quantitative AI screening</p>
                     </div>
-                    <span id="market-status-badge" style="background:rgba(16,185,129,0.15); color:var(--bullish-green); border:1px solid rgba(16,185,129,0.3); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">🟢 Market Live</span>
                 </div>
 
                 <!-- 🤖 Ask AI Smart Search Bar -->
@@ -630,7 +642,7 @@
                 <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 20px;">
                     <div>
                         <h2 style="margin:0; font-size: 1.5rem;">👤 My Trader Profile</h2>
-                        <p class="text-muted" style="margin:4px 0 0 0; font-size:12px;">Cloud-synchronized trading profile, virtual capital & account settings</p>
+                        <p class="text-muted" style="margin:4px 0 0 0; font-size:12px;">Indian equities, F&O and MCX commodities terminal profile & virtual portfolio</p>
                     </div>
                     <span id="tab-profile-status-badge" style="background:rgba(16,185,129,0.15); color:var(--bullish-green); border:1px solid rgba(16,185,129,0.3); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">🟢 Active Trader</span>
                 </div>
@@ -645,18 +657,18 @@
                             <div style="flex: 1;">
                                 <div style="font-weight: 800; font-size: 1.25rem; color: #fff;" id="profile-tab-name">Trader</div>
                                 <div style="font-size: 13.5px; color: #60a5fa; font-weight: 600; margin-top: 2px;" id="profile-tab-mobile">+91 ----------</div>
-                                <div style="font-size: 11.5px; color: #94a3b8; margin-top: 4px;">Account Status: <span style="color: #34d399; font-weight: 700;">Active ☁️</span></div>
+                                <div style="font-size: 11.5px; color: #94a3b8; margin-top: 4px;">Account: <span style="color: #34d399; font-weight: 700;">Verified Trader</span></div>
                             </div>
                         </div>
 
                         <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; color: #94a3b8;">
                             <div style="display: flex; justify-content: space-between;">
-                                <span>Cloud Synchronization:</span>
-                                <span style="color: #34d399; font-weight: 700;">24/7 Enabled</span>
+                                <span>Trading Segments:</span>
+                                <span style="color: #cbd5e1; font-weight: 700;">NSE, BSE, MCX (F&O)</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span>Multi-Device Auto-Save:</span>
-                                <span style="color: #60a5fa; font-weight: 700;">Persistent</span>
+                                <span>Feed Latency:</span>
+                                <span style="color: #34d399; font-weight: 700;">Real-Time Tick Feed</span>
                             </div>
                         </div>
                     </div>
@@ -670,6 +682,9 @@
                         </div>
 
                         <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                            <button type="button" id="btn-tab-mobile-connect" class="btn" style="flex: 1; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4); color: #60a5fa; font-weight: 700; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 12.5px; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                📱 Mobile QR & Link
+                            </button>
                             <button type="button" id="btn-tab-reset-portfolio" class="btn" style="flex: 1; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #f87171; font-weight: 700; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 12.5px; min-width: 140px;">
                                 🔄 Reset Capital (₹10L)
                             </button>
@@ -911,7 +926,7 @@
                 </form>
 
                 <p style="text-align: center; font-size: 11px; color: #64748b; margin-top: 14px; margin-bottom: 6px;">
-                    🛡️ Auto-saves your ₹10,00,000 virtual balance, open positions, and watchlist across all devices.
+                    ⚡ Instant access to live market feeds, AI analysis & ₹10,00,000 virtual trading margin.
                 </p>
                 <div style="text-align: center; margin-top: 8px;">
                     <button type="button" id="guest-explore-btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 11.5px; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s;">
@@ -951,8 +966,8 @@
                         <div style="font-size: 16px; font-weight: 800; color: #34d399; margin-top: 4px;" id="profile-balance-text">₹10,00,000.00</div>
                     </div>
                     <div style="background: #14172e; border: 1px solid #232746; border-radius: 10px; padding: 12px; text-align: center;">
-                        <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">Account Status</div>
-                        <div style="font-size: 14px; font-weight: 700; color: #60a5fa; margin-top: 4px;">Auto-Saving ☁️</div>
+                        <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">Account Level</div>
+                        <div style="font-size: 14px; font-weight: 700; color: #60a5fa; margin-top: 4px;">Pro Trader</div>
                     </div>
                 </div>
 

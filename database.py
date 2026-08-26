@@ -52,6 +52,7 @@ class ScripDatabase:
             pass
 
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_symbol ON instruments (symbol)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_trading_symbol ON instruments (trading_symbol)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_name ON instruments (name)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_exchange ON instruments (exchange)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_segment ON instruments (segment)")

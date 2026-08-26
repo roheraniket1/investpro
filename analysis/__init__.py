@@ -51,9 +51,29 @@ def _is_signals_stale(sigs, max_age_hours=3) -> bool:
     except Exception:
         return True
 
+import threading
+
+_scan_in_progress = False
+
+def _trigger_background_scan():
+    global _scan_in_progress
+    if _scan_in_progress:
+        return
+    _scan_in_progress = True
+    def _run():
+        global _scan_in_progress
+        try:
+            sg = SignalGenerator()
+            sg.scan_and_save_all()
+        finally:
+            _scan_in_progress = False
+    threading.Thread(target=_run, daemon=True).start()
+
 def get_intraday_signals(force_refresh=False):
     sigs = db.get_signals("intraday", limit=25)
-    if sigs and not force_refresh and not _is_signals_stale(sigs):
+    if sigs:
+        if force_refresh or _is_signals_stale(sigs):
+            _trigger_background_scan()
         return sigs
     sg = SignalGenerator()
     sg.scan_and_save_all()
@@ -61,7 +81,9 @@ def get_intraday_signals(force_refresh=False):
 
 def get_shortterm_signals(force_refresh=False):
     sigs = db.get_signals("shortterm", limit=25)
-    if sigs and not force_refresh and not _is_signals_stale(sigs):
+    if sigs:
+        if force_refresh or _is_signals_stale(sigs):
+            _trigger_background_scan()
         return sigs
     sg = SignalGenerator()
     sg.scan_and_save_all()
@@ -69,7 +91,9 @@ def get_shortterm_signals(force_refresh=False):
 
 def get_longterm_signals(force_refresh=False):
     sigs = db.get_signals("longterm", limit=25)
-    if sigs and not force_refresh and not _is_signals_stale(sigs):
+    if sigs:
+        if force_refresh or _is_signals_stale(sigs):
+            _trigger_background_scan()
         return sigs
     sg = SignalGenerator()
     sg.scan_and_save_all()
@@ -77,7 +101,9 @@ def get_longterm_signals(force_refresh=False):
 
 def get_futures_signals(force_refresh=False):
     sigs = db.get_signals("futures", limit=25)
-    if sigs and not force_refresh and not _is_signals_stale(sigs):
+    if sigs:
+        if force_refresh or _is_signals_stale(sigs):
+            _trigger_background_scan()
         return sigs
     sg = SignalGenerator()
     sg.scan_and_save_all()
@@ -85,7 +111,9 @@ def get_futures_signals(force_refresh=False):
 
 def get_options_signals(force_refresh=False):
     sigs = db.get_signals("options", limit=25)
-    if sigs and not force_refresh and not _is_signals_stale(sigs):
+    if sigs:
+        if force_refresh or _is_signals_stale(sigs):
+            _trigger_background_scan()
         return sigs
     sg = SignalGenerator()
     sg.scan_and_save_all()

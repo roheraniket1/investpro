@@ -130,6 +130,14 @@ class KotakNeoPro {
         const tabBalanceEl = document.getElementById('profile-tab-balance');
         const btnTabReset = document.getElementById('btn-tab-reset-portfolio');
         const btnTabLogout = document.getElementById('btn-tab-logout');
+        const btnTabMobileConnect = document.getElementById('btn-tab-mobile-connect');
+
+        if (btnTabMobileConnect) {
+            btnTabMobileConnect.onclick = () => {
+                const modal = document.getElementById('mobile-connect-modal');
+                if (modal) modal.style.display = 'flex';
+            };
+        }
 
         const updateAuthUI = () => {
             const displayNameEl = document.getElementById('user-display-name');
@@ -137,27 +145,31 @@ class KotakNeoPro {
             const profileNameEl = document.getElementById('profile-name-text');
             const profileMobileEl = document.getElementById('profile-mobile-text');
             const profileBalanceEl = document.getElementById('profile-balance-text');
+            const dashboardWelcomeEl = document.getElementById('dashboard-welcome-user');
 
             if (this.user && this.sessionToken) {
-                const firstName = (this.user.full_name || 'Trader').split(' ')[0];
+                const fullName = this.user.full_name || 'Trader';
+                const firstName = fullName.split(' ')[0];
                 const char = firstName.charAt(0).toUpperCase();
                 const balFormatted = this.formatCurrency(this.user.virtual_balance || 1000000);
                 const balLakh = (parseFloat(this.user.virtual_balance || 1000000) / 100000).toFixed(1);
                 
                 if (displayNameEl) displayNameEl.textContent = `${firstName} (₹${balLakh}L)`;
                 if (avatarCharEl) avatarCharEl.textContent = char;
-                if (profileNameEl) profileNameEl.textContent = this.user.full_name || 'Trader';
+                if (profileNameEl) profileNameEl.textContent = fullName;
                 if (profileMobileEl) profileMobileEl.textContent = `+91 ${this.user.mobile}`;
                 if (profileBalanceEl) profileBalanceEl.textContent = balFormatted;
 
                 if (tabAvatarEl) tabAvatarEl.textContent = char;
-                if (tabNameEl) tabNameEl.textContent = this.user.full_name || 'Trader';
+                if (tabNameEl) tabNameEl.textContent = fullName;
                 if (tabMobileEl) tabMobileEl.textContent = `+91 ${this.user.mobile}`;
                 if (tabBalanceEl) tabBalanceEl.textContent = balFormatted;
+                if (dashboardWelcomeEl) dashboardWelcomeEl.textContent = `Namaste, ${fullName} Ji! 🙏`;
             } else {
                 if (displayNameEl) displayNameEl.textContent = 'Sign In';
                 if (tabNameEl) tabNameEl.textContent = 'Guest Trader';
                 if (tabMobileEl) tabMobileEl.textContent = 'Not Signed In';
+                if (dashboardWelcomeEl) dashboardWelcomeEl.textContent = 'Namaste, Trader Ji! 🙏';
             }
         };
 
@@ -594,7 +606,7 @@ class KotakNeoPro {
 
         input.addEventListener('input', () => {
             clearTimeout(this.searchTimeout);
-            this.searchTimeout = setTimeout(doSearch, 250);
+            this.searchTimeout = setTimeout(doSearch, 80);
         });
 
         // Manual Setup Finder Autocomplete
