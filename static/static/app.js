@@ -196,7 +196,10 @@ class KotakNeoPro {
                     localStorage.setItem('investpro_session_token', data.user.token);
 
                     updateAuthUI();
-                    if (authModal) authModal.style.display = 'none';
+                    if (authModal) {
+                        authModal.style.display = 'none';
+                        if (closeAuthBtn) closeAuthBtn.style.display = 'block';
+                    }
                     this.showNotification(`Welcome, ${data.user.full_name}! ₹${(data.user.virtual_balance/100000).toFixed(1)}L active.`, 'success');
                     this.loadPaperPortfolio();
                 } catch (err) {
@@ -225,7 +228,11 @@ class KotakNeoPro {
                 localStorage.removeItem('investpro_session_token');
                 updateAuthUI();
                 if (profileModal) profileModal.style.display = 'none';
-                this.showNotification('Logged out successfully.', 'info');
+                if (authModal) {
+                    authModal.style.display = 'flex';
+                    if (closeAuthBtn) closeAuthBtn.style.display = 'none';
+                }
+                this.showNotification('Logged out. Please sign in to proceed.', 'info');
                 this.loadPaperPortfolio();
             };
         }
@@ -250,19 +257,34 @@ class KotakNeoPro {
             };
         }
 
-        // Fetch active profile on startup
+        // Fetch active profile on startup - If NOT logged in, require login to proceed!
         fetch('/api/user/profile', { headers: this.getAuthHeaders() })
             .then(res => res.json())
             .then(data => {
                 if (data.is_authenticated && data.user) {
                     this.user = data.user;
                     updateAuthUI();
+                    if (authModal) {
+                        authModal.style.display = 'none';
+                        if (closeAuthBtn) closeAuthBtn.style.display = 'block';
+                    }
                 } else {
                     this.user = null;
                     updateAuthUI();
+                    if (authModal) {
+                        authModal.style.display = 'flex';
+                        if (closeAuthBtn) closeAuthBtn.style.display = 'none';
+                    }
                 }
             })
-            .catch(() => {});
+            .catch(() => {
+                this.user = null;
+                updateAuthUI();
+                if (authModal) {
+                    authModal.style.display = 'flex';
+                    if (closeAuthBtn) closeAuthBtn.style.display = 'none';
+                }
+            });
     }
 
     initTabs() {
