@@ -39,6 +39,10 @@ class TunnelManager:
                 
             self.is_running = True
             
+            # If running on Linux (Render Cloud), no local subprocess tunnels needed
+            if sys.platform != 'win32' or os.getenv("RENDER"):
+                return self.pages_url
+
             # Fetch public IP
             threading.Thread(target=self._fetch_public_ip, daemon=True).start()
             

@@ -49,7 +49,7 @@ MAX_SOCKETS = 16
 # Auto Download
 # -------------------------------
 
-DOWNLOAD_SCRIP_MASTER_ON_STARTUP = False
+DOWNLOAD_SCRIP_MASTER_ON_STARTUP = True
 
 # Download once every day
 AUTO_REFRESH_MASTER = True
