@@ -56,24 +56,24 @@ export async function onRequest(context) {
       }
     };
     
-    // 1. Try Primary (Render Cloud)
+    // 1. Try Primary (Render Cloud 24/7 Backend)
     try {
-      const resp = await proxyTo(primaryHost, 3500);
+      const resp = await proxyTo(primaryHost, 35000);
       if (resp && resp.status < 500) {
         return resp;
       }
     } catch (e) {
-      // Primary timed out or building
+      // Primary timed out or errored
     }
     
-    // 2. Fallback to Active Tunnel
+    // 2. Fallback to Active Tunnel (if laptop is on)
     try {
-      const resp = await proxyTo(fallbackHost, 10000);
-      if (resp) {
+      const resp = await proxyTo(fallbackHost, 8000);
+      if (resp && resp.status < 500) {
         return resp;
       }
     } catch (e) {
-      return new Response(JSON.stringify({ error: "Connecting to market server...", status: "connecting" }), {
+      return new Response(JSON.stringify({ error: "Cloud backend connecting...", status: "connecting" }), {
         status: 503,
         headers: { "Content-Type": "application/json" }
       });

@@ -1,10 +1,12 @@
-neo_api_client
 python-dotenv
 pyotp
 fastapi
 uvicorn[standard]
 wsproto
 websockets
+websocket-client
+pyjwt
+six
 pandas
 numpy
 ta
@@ -15,3 +17,4 @@ aiohttp
 jinja2
 python-multipart
 pytz
+
