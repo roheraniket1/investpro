@@ -122,6 +122,8 @@ class KotakNeoPro {
                     togglePwBtn.textContent = '👁️';
                 }
             };
+        }
+
         const tabAvatarEl = document.getElementById('profile-tab-avatar');
         const tabNameEl = document.getElementById('profile-tab-name');
         const tabMobileEl = document.getElementById('profile-tab-mobile');
