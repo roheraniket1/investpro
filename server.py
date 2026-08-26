@@ -13,6 +13,18 @@ Integrates all modules:
 - Historical Data (historical.py)
 """
 
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+if hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 import asyncio
 import json
 import os
@@ -112,9 +124,9 @@ main_loop = None
 async def startup():
     global main_loop
     main_loop = asyncio.get_running_loop()
-    logger.info("═" * 60)
-    logger.info("  InvestPro — Live Market & Paper Trading Terminal")
-    logger.info("═" * 60)
+    logger.info("=" * 60)
+    logger.info("  InvestPro - Live Market & Paper Trading Terminal")
+    logger.info("=" * 60)
 
     # Download scrip master on startup
     if DOWNLOAD_SCRIP_MASTER_ON_STARTUP:
@@ -1733,5 +1745,5 @@ if __name__ == "__main__":
         port=PORT,
         reload=False,
         log_level="info",
-        ws="auto",
+        ws="wsproto",
     )
