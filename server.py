@@ -159,6 +159,9 @@ async def startup():
     # Start daily background scanner
     asyncio.create_task(daily_scan_scheduler())
 
+    # Keep Render alive - self-ping every 13 minutes so server never sleeps
+    asyncio.create_task(keep_server_alive())
+
     logger.info(f"InvestPro running on http://localhost:{PORT}")
     logger.info(f"Dashboard at http://localhost:{PORT}/")
 
@@ -1710,6 +1713,26 @@ async def get_mobile_info():
         "recommended_url": fixed_url,
         "hostname": socket.gethostname()
     }
+
+
+async def keep_server_alive():
+    """
+    Self-ping /api/health every 13 minutes to keep Render free tier alive.
+    Render shuts down containers after 15 minutes of inactivity.
+    """
+    # Wait 60s after startup before first ping
+    await asyncio.sleep(60)
+    import httpx
+    render_url = os.getenv("RENDER_EXTERNAL_URL", "https://investpro-riyy.onrender.com")
+    ping_url = f"{render_url}/api/health"
+    while True:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(ping_url)
+                logger.info(f"[KeepAlive] Self-ping → {resp.status_code}")
+        except Exception as e:
+            logger.warning(f"[KeepAlive] Ping failed: {e}")
+        await asyncio.sleep(780)  # 13 minutes
 
 
 async def daily_scan_scheduler():

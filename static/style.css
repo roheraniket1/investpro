@@ -217,7 +217,9 @@ body {
     flex: 1;
     position: relative;
     z-index: 10001;
-    overflow: visible !important;
+    /* CRITICAL: must NOT have overflow:hidden or it clips the dropdown */
+    overflow: visible;
+    min-width: 0;
 }
 
 #symbol-search {
@@ -230,7 +232,11 @@ body {
     font-size: 1.05rem;
     font-family: inherit;
     outline: none;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+    /* prevent input itself from overflowing its container */
+    min-width: 0;
+    max-width: 100%;
 }
 #symbol-search:focus {
     border-color: var(--accent-blue);
@@ -248,11 +254,15 @@ body {
     max-height: min(480px, 65vh);
     overflow-y: auto;
     overflow-x: hidden;
-    z-index: 999999 !important;
+    /* z-index MUST be higher than sidebar, modals, etc. */
+    z-index: 999999;
     display: none;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 25px rgba(59, 130, 246, 0.3);
     backdrop-filter: blur(20px);
     -webkit-overflow-scrolling: touch;
+    /* Ensure it always renders on top and is never clipped by parent */
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 .ac-item {
@@ -263,8 +273,10 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    transition: all 0.15s ease;
+    transition: background 0.1s;
     touch-action: manipulation;
+    /* Prevent text overflow inside each row */
+    overflow: hidden;
 }
 .ac-item:last-child {
     border-bottom: none;
@@ -272,8 +284,8 @@ body {
 .ac-item:hover, .ac-item:active {
     background: rgba(59, 130, 246, 0.22);
 }
-.ac-symbol { font-weight: 700; color: #ffffff; font-size: 1.05rem; }
-.ac-desc { font-size: 0.88rem; color: #cbd5e1; font-weight: 500; }
+.ac-symbol { font-weight: 700; color: #ffffff; font-size: 1.05rem; flex-shrink: 0; }
+.ac-desc { font-size: 0.88rem; color: #cbd5e1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 .analyze-btn {
     padding: 16px 32px;
@@ -954,11 +966,14 @@ footer {
         position: relative !important;
         z-index: 10001 !important;
         overflow: visible !important;
+        min-width: 0 !important;
     }
 
     #symbol-search {
         padding: 12px 14px;
         font-size: 0.95rem;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .autocomplete-dropdown {
@@ -967,14 +982,17 @@ footer {
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
-        max-height: 280px !important;
+        max-height: 260px !important;
         background: #0d0f1f !important;
         border: 1.5px solid #3b82f6 !important;
         border-radius: 10px !important;
         z-index: 999999 !important;
         box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95) !important;
         overflow-y: auto !important;
+        overflow-x: hidden !important;
         -webkit-overflow-scrolling: touch !important;
+        /* Force GPU layer to prevent clipping by ancestor overflow */
+        transform: translateZ(0) !important;
     }
 
     .ac-item {

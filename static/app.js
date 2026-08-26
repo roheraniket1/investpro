@@ -17,35 +17,43 @@ class KotakNeoPro {
         this.initAISearch();
         this.initSignals();
         this.initScreener();
-        this.connectWebSocket();
-        this.checkHealth();
-        this.initAlertsTicker();
-        
-        // Initial loads
-        this.loadSignals('intraday');
-        this.loadScreener('top_gainers');
-        this.loadAIDailyBriefing();
-        
+
         document.getElementById('analyze-btn').addEventListener('click', () => {
             const val = document.getElementById('symbol-search').value.trim();
             if (val) this.analyzeStock(val);
         });
-        
+
         document.getElementById('load-oc-btn').addEventListener('click', () => {
             const sym = document.getElementById('oc-symbol').value.trim();
             const exp = document.getElementById('oc-expiry').value;
             if (sym && exp) this.loadOptionChain(sym, exp);
         });
 
-        // Initialize User Authentication & Auto-Save profile
+        // Initialize User Authentication first so session is restored before any data loads
         this.initAuth();
 
         // Initialize paper trading subsystem & live ticker
         this.initPaperTrading();
-        this.startPaperLiveTicker();
-        
+
         // Initialize Mobile QR & Connect helper
         this.initMobileConnect();
+
+        // Defer heavy API calls to after page is painted - makes app feel instant
+        setTimeout(() => {
+            this.connectWebSocket();
+            this.checkHealth();
+            this.initAlertsTicker();
+            this.loadSignals('intraday');
+        }, 400);
+
+        setTimeout(() => {
+            this.loadScreener('top_gainers');
+        }, 1200);
+
+        setTimeout(() => {
+            this.loadAIDailyBriefing();
+            this.startPaperLiveTicker();
+        }, 2000);
     }
 
 
@@ -303,34 +311,59 @@ class KotakNeoPro {
             };
         }
 
-        // Fetch active profile on startup - If NOT logged in, require login to proceed!
-        fetch('/api/user/profile', { headers: this.getAuthHeaders() })
-            .then(res => res.json())
-            .then(data => {
-                if (data.is_authenticated && data.user) {
-                    this.user = data.user;
-                    updateAuthUI();
-                    if (authModal) {
-                        authModal.style.display = 'none';
-                        if (closeAuthBtn) closeAuthBtn.style.display = 'block';
+        // Restore saved session on startup - fetch fresh user data from DB
+        const savedToken = localStorage.getItem('investpro_session_token');
+        if (savedToken) {
+            // Show a brief "restoring session" state before auth modal can show
+            if (authModal) authModal.style.display = 'none';
+
+            fetch('/api/user/profile', { headers: this.getAuthHeaders() })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.is_authenticated && data.user) {
+                        this.user = data.user;
+                        // Sync token from server in case it refreshed
+                        if (data.user.token) {
+                            this.sessionToken = data.user.token;
+                            localStorage.setItem('investpro_session_token', data.user.token);
+                        }
+                        updateAuthUI();
+                        if (authModal) {
+                            authModal.style.display = 'none';
+                            if (closeAuthBtn) closeAuthBtn.style.display = 'block';
+                        }
+                        this.showNotification(`Welcome back, ${data.user.full_name} Ji! ₹${(data.user.virtual_balance/100000).toFixed(1)}L active.`, 'success');
+                        this.loadPaperPortfolio();
+                    } else {
+                        // Token expired - clear and force login
+                        this.sessionToken = null;
+                        this.user = null;
+                        localStorage.removeItem('investpro_session_token');
+                        updateAuthUI();
+                        if (authModal) {
+                            authModal.style.display = 'flex';
+                            if (closeAuthBtn) closeAuthBtn.style.display = 'none';
+                        }
                     }
-                } else {
+                })
+                .catch(() => {
+                    // Network error - still show app but prompt login
                     this.user = null;
                     updateAuthUI();
                     if (authModal) {
                         authModal.style.display = 'flex';
                         if (closeAuthBtn) closeAuthBtn.style.display = 'none';
                     }
-                }
-            })
-            .catch(() => {
-                this.user = null;
-                updateAuthUI();
-                if (authModal) {
-                    authModal.style.display = 'flex';
-                    if (closeAuthBtn) closeAuthBtn.style.display = 'none';
-                }
-            });
+                });
+        } else {
+            // No saved session - require login
+            this.user = null;
+            updateAuthUI();
+            if (authModal) {
+                authModal.style.display = 'flex';
+                if (closeAuthBtn) closeAuthBtn.style.display = 'none';
+            }
+        }
     }
 
     initTabs() {
@@ -423,7 +456,7 @@ class KotakNeoPro {
 
         updateBadge();
         if (!this.healthInterval) {
-            this.healthInterval = setInterval(updateBadge, 3000);
+            this.healthInterval = setInterval(updateBadge, 30000);
         }
     }
 
