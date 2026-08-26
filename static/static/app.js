@@ -122,7 +122,12 @@ class KotakNeoPro {
                     togglePwBtn.textContent = '👁️';
                 }
             };
-        }
+        const tabAvatarEl = document.getElementById('profile-tab-avatar');
+        const tabNameEl = document.getElementById('profile-tab-name');
+        const tabMobileEl = document.getElementById('profile-tab-mobile');
+        const tabBalanceEl = document.getElementById('profile-tab-balance');
+        const btnTabReset = document.getElementById('btn-tab-reset-portfolio');
+        const btnTabLogout = document.getElementById('btn-tab-logout');
 
         const updateAuthUI = () => {
             const displayNameEl = document.getElementById('user-display-name');
@@ -133,14 +138,24 @@ class KotakNeoPro {
 
             if (this.user && this.sessionToken) {
                 const firstName = (this.user.full_name || 'Trader').split(' ')[0];
+                const char = firstName.charAt(0).toUpperCase();
+                const balFormatted = this.formatCurrency(this.user.virtual_balance || 1000000);
                 const balLakh = (parseFloat(this.user.virtual_balance || 1000000) / 100000).toFixed(1);
+                
                 if (displayNameEl) displayNameEl.textContent = `${firstName} (₹${balLakh}L)`;
-                if (avatarCharEl) avatarCharEl.textContent = firstName.charAt(0).toUpperCase();
+                if (avatarCharEl) avatarCharEl.textContent = char;
                 if (profileNameEl) profileNameEl.textContent = this.user.full_name || 'Trader';
                 if (profileMobileEl) profileMobileEl.textContent = `+91 ${this.user.mobile}`;
-                if (profileBalanceEl) profileBalanceEl.textContent = this.formatCurrency(this.user.virtual_balance || 1000000);
+                if (profileBalanceEl) profileBalanceEl.textContent = balFormatted;
+
+                if (tabAvatarEl) tabAvatarEl.textContent = char;
+                if (tabNameEl) tabNameEl.textContent = this.user.full_name || 'Trader';
+                if (tabMobileEl) tabMobileEl.textContent = `+91 ${this.user.mobile}`;
+                if (tabBalanceEl) tabBalanceEl.textContent = balFormatted;
             } else {
                 if (displayNameEl) displayNameEl.textContent = 'Sign In';
+                if (tabNameEl) tabNameEl.textContent = 'Guest Trader';
+                if (tabMobileEl) tabMobileEl.textContent = 'Not Signed In';
             }
         };
 
@@ -217,45 +232,45 @@ class KotakNeoPro {
             };
         }
 
-        // Logout
-        if (logoutBtn) {
-            logoutBtn.onclick = async () => {
-                try {
-                    await fetch('/api/user/logout', { method: 'POST', headers: this.getAuthHeaders() });
-                } catch(e) {}
-                this.sessionToken = null;
-                this.user = null;
-                localStorage.removeItem('investpro_session_token');
-                updateAuthUI();
-                if (profileModal) profileModal.style.display = 'none';
-                if (authModal) {
-                    authModal.style.display = 'flex';
-                    if (closeAuthBtn) closeAuthBtn.style.display = 'none';
-                }
-                this.showNotification('Logged out. Please sign in to proceed.', 'info');
-                this.loadPaperPortfolio();
-            };
-        }
+        const handleLogout = async () => {
+            try {
+                await fetch('/api/user/logout', { method: 'POST', headers: this.getAuthHeaders() });
+            } catch(e) {}
+            this.sessionToken = null;
+            this.user = null;
+            localStorage.removeItem('investpro_session_token');
+            updateAuthUI();
+            if (profileModal) profileModal.style.display = 'none';
+            if (authModal) {
+                authModal.style.display = 'flex';
+                if (closeAuthBtn) closeAuthBtn.style.display = 'none';
+            }
+            this.showNotification('Logged out. Please sign in to proceed.', 'info');
+            this.loadPaperPortfolio();
+        };
 
-        // Reset user portfolio
-        if (resetPortfolioBtn) {
-            resetPortfolioBtn.onclick = async () => {
-                if (confirm('Reset your virtual trading balance to ₹10,00,000 and clear active trades?')) {
-                    try {
-                        const res = await fetch('/api/paper/reset', { method: 'POST', headers: this.getAuthHeaders() });
-                        if (res.ok) {
-                            this.showNotification('Portfolio reset to ₹10,00,000.00', 'success');
-                            if (this.user) this.user.virtual_balance = 1000000.0;
-                            updateAuthUI();
-                            if (profileModal) profileModal.style.display = 'none';
-                            this.loadPaperPortfolio();
-                        }
-                    } catch(e) {
-                        this.showNotification('Failed to reset portfolio', 'error');
+        const handleResetPortfolio = async () => {
+            if (confirm('Reset your virtual trading balance to ₹10,00,000 and clear active trades?')) {
+                try {
+                    const res = await fetch('/api/paper/reset', { method: 'POST', headers: this.getAuthHeaders() });
+                    if (res.ok) {
+                        this.showNotification('Portfolio reset to ₹10,00,000.00', 'success');
+                        if (this.user) this.user.virtual_balance = 1000000.0;
+                        updateAuthUI();
+                        if (profileModal) profileModal.style.display = 'none';
+                        this.loadPaperPortfolio();
                     }
+                } catch(e) {
+                    this.showNotification('Failed to reset portfolio', 'error');
                 }
-            };
-        }
+            }
+        };
+
+        if (logoutBtn) logoutBtn.onclick = handleLogout;
+        if (btnTabLogout) btnTabLogout.onclick = handleLogout;
+
+        if (resetPortfolioBtn) resetPortfolioBtn.onclick = handleResetPortfolio;
+        if (btnTabReset) btnTabReset.onclick = handleResetPortfolio;
 
         // Fetch active profile on startup - If NOT logged in, require login to proceed!
         fetch('/api/user/profile', { headers: this.getAuthHeaders() })
@@ -303,6 +318,24 @@ class KotakNeoPro {
                 
                 if (tab.dataset.tab === 'paper') {
                     this.loadPaperPortfolio();
+                } else if (tab.dataset.tab === 'profile') {
+                    fetch('/api/user/profile', { headers: this.getAuthHeaders() })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.is_authenticated && data.user) {
+                                this.user = data.user;
+                                const char = (this.user.full_name || 'T').charAt(0).toUpperCase();
+                                const bal = this.formatCurrency(this.user.virtual_balance || 1000000);
+                                const aEl = document.getElementById('profile-tab-avatar');
+                                const nEl = document.getElementById('profile-tab-name');
+                                const mEl = document.getElementById('profile-tab-mobile');
+                                const bEl = document.getElementById('profile-tab-balance');
+                                if (aEl) aEl.textContent = char;
+                                if (nEl) nEl.textContent = this.user.full_name || 'Trader';
+                                if (mEl) mEl.textContent = `+91 ${this.user.mobile}`;
+                                if (bEl) bEl.textContent = bal;
+                            }
+                        }).catch(() => {});
                 }
                 
                 // Trigger auto-fit resize for charts on mobile
