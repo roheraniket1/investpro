@@ -1858,11 +1858,13 @@ async def poll_prices_fallback():
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", PORT))
+    logger.info(f"Starting server on port {port}...")
     uvicorn.run(
         "server:app",
         host="0.0.0.0",
-        port=PORT,
+        port=port,
         reload=False,
         log_level="info",
-        ws="wsproto",
     )
+
