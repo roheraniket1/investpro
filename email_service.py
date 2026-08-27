@@ -137,14 +137,15 @@ def send_credentials_email(to_email: str, user_name: str, mobile: str, temp_pass
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = "Your InvestPro Account Login Credentials"
-            msg["From"] = f"InvestPro Security <{SMTP_FROM}>"
-            msg["To"] = to_email
+            sender_addr = SMTP_USER.strip()
+            msg["From"] = f"InvestPro Security <{sender_addr}>"
+            msg["To"] = to_email.strip()
             msg.attach(MIMEText(html_content, "html"))
 
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
                 server.starttls()
-                server.login(SMTP_USER, SMTP_PASS)
-                server.sendmail(SMTP_FROM, [to_email], msg.as_string())
+                server.login(sender_addr, SMTP_PASS.strip())
+                server.sendmail(sender_addr, [to_email.strip()], msg.as_string())
 
             logger.info(f"✅ [EmailService] Email sent via SMTP to {to_email}")
             return True
