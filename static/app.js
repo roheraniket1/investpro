@@ -186,59 +186,77 @@ class KotakNeoPro {
             this.sessionToken = userData.token;
             this.user = userData;
             localStorage.setItem('investpro_session_token', userData.token);
-            updateAuthUI();
             if (authScreen) authScreen.style.display = 'none';
             if (mainApp) mainApp.style.display = 'block';
+            try { updateAuthUI(); } catch(e) { console.error('updateAuthUI error:', e); }
             this.showNotification(`Namaste, ${userData.full_name} Ji! Logged in successfully.`, 'success');
-            this.loadPaperPortfolio();
+            try { this.loadPaperPortfolio(); } catch(e) { console.error('loadPaperPortfolio error:', e); }
         };
 
         // 1. SIGN IN SUBMIT
         const btnSubmitLogin = document.getElementById('btn-submit-login');
         const loginIdentInput = document.getElementById('login-ident-input');
         const loginPwInput = document.getElementById('login-pw-input');
+        const formLogin = document.getElementById('form-login');
 
-        if (btnSubmitLogin) {
-            btnSubmitLogin.onclick = async () => {
-                const rawIdent = (loginIdentInput ? loginIdentInput.value : '').trim();
-                const pw = (loginPwInput ? loginPwInput.value : '').trim();
+        const handleLoginSubmit = async () => {
+            const rawIdent = (loginIdentInput ? loginIdentInput.value : '').trim();
+            const pw = (loginPwInput ? loginPwInput.value : '').trim();
 
-                if (!rawIdent) {
-                    showAlert('Please enter your 10-digit mobile number or email.');
-                    return;
-                }
-                if (!pw || pw.length < 4) {
-                    showAlert('Password must be at least 4 characters.');
-                    return;
-                }
+            if (!rawIdent) {
+                showAlert('Please enter your 10-digit mobile number or email.');
+                return;
+            }
+            if (!pw || pw.length < 4) {
+                showAlert('Password must be at least 4 characters.');
+                return;
+            }
 
-                // If number, extract last 10 digits
-                let ident = rawIdent;
-                if (/^[\d\s+-]+$/.test(rawIdent)) {
-                    const digits = rawIdent.replace(/\D/g, '');
-                    if (digits.length >= 10) ident = digits.slice(-10);
-                }
+            // If number, extract last 10 digits
+            let ident = rawIdent;
+            if (/^[\d\s+-]+$/.test(rawIdent)) {
+                const digits = rawIdent.replace(/\D/g, '');
+                if (digits.length >= 10) ident = digits.slice(-10);
+            }
 
+            if (btnSubmitLogin) {
                 btnSubmitLogin.disabled = true;
                 btnSubmitLogin.textContent = 'Signing In...';
+            }
 
-                try {
-                    const res = await fetch('/api/user/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ identifier: ident, password: pw })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                        throw new Error(data.detail || data.error || 'Authentication failed');
-                    }
-                    enterTerminal(data.user);
-                } catch (err) {
-                    showAlert(err.message || 'Login failed');
-                } finally {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+                const res = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: ident, password: pw }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || data.error || 'Authentication failed');
+                }
+                enterTerminal(data.user);
+            } catch (err) {
+                showAlert(err.name === 'AbortError' ? 'Connecting to cloud server... please retry.' : (err.message || 'Login failed'));
+            } finally {
+                if (btnSubmitLogin) {
                     btnSubmitLogin.disabled = false;
                     btnSubmitLogin.textContent = 'Sign In to Terminal';
                 }
+            }
+        };
+
+        if (btnSubmitLogin) btnSubmitLogin.onclick = handleLoginSubmit;
+        if (formLogin) {
+            formLogin.onsubmit = (e) => {
+                e.preventDefault();
+                handleLoginSubmit();
+                return false;
             };
         }
 

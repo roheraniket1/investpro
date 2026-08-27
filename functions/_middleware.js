@@ -17,20 +17,25 @@ export async function onRequest(context) {
     newHeaders.delete("x-forwarded-proto");
     newHeaders.delete("x-real-ip");
     
-    const reqInit = {
-      method: context.request.method,
-      headers: newHeaders,
-      redirect: "follow"
-    };
-    
+    let bodyBuffer = null;
     if (!['GET', 'HEAD'].includes(context.request.method) && !isWs) {
-      reqInit.body = context.request.body;
-      reqInit.duplex = "half";
+      try {
+        bodyBuffer = await context.request.arrayBuffer();
+      } catch (e) {}
     }
     
     let lastError = null;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
+        const reqInit = {
+          method: context.request.method,
+          headers: newHeaders,
+          redirect: "follow"
+        };
+        if (bodyBuffer) {
+          reqInit.body = bodyBuffer;
+        }
+        
         const resp = await fetch(targetUrl.toString(), reqInit);
         if (resp.status !== 502 && resp.status !== 503) {
           return resp;
