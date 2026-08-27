@@ -445,10 +445,28 @@ class KotakNeoPro {
         // Startup: Check if session is already saved
         const savedToken = localStorage.getItem('investpro_session_token');
         if (savedToken) {
+            this.sessionToken = savedToken;
+            // Optimistically unlock terminal so user is NEVER blocked
+            if (authScreen) authScreen.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'block';
+
             fetch('/api/user/profile', { headers: this.getAuthHeaders() })
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 401) {
+                        // Explicitly invalid token only
+                        this.sessionToken = null;
+                        this.user = null;
+                        localStorage.removeItem('investpro_session_token');
+                        updateAuthUI();
+                        if (authScreen) authScreen.style.display = 'flex';
+                        if (mainApp) mainApp.style.display = 'none';
+                        showView('login');
+                        return null;
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    if (data.is_authenticated && data.user) {
+                    if (data && data.is_authenticated && data.user) {
                         this.user = data.user;
                         if (data.user.token) {
                             this.sessionToken = data.user.token;
@@ -457,24 +475,14 @@ class KotakNeoPro {
                         updateAuthUI();
                         if (authScreen) authScreen.style.display = 'none';
                         if (mainApp) mainApp.style.display = 'block';
-                        this.showNotification(`Welcome back, ${data.user.full_name} Ji! ₹${(data.user.virtual_balance/100000).toFixed(1)}L active.`, 'success');
                         this.loadPaperPortfolio();
-                    } else {
-                        this.sessionToken = null;
-                        this.user = null;
-                        localStorage.removeItem('investpro_session_token');
-                        updateAuthUI();
-                        if (authScreen) authScreen.style.display = 'flex';
-                        if (mainApp) mainApp.style.display = 'none';
-                        showView('login');
                     }
                 })
-                .catch(() => {
-                    this.user = null;
-                    updateAuthUI();
-                    if (authScreen) authScreen.style.display = 'flex';
-                    if (mainApp) mainApp.style.display = 'none';
-                    showView('login');
+                .catch((err) => {
+                    console.warn('Transient network delay during profile check, retaining active session:', err);
+                    // RETAIN SESSION: Do not kick user out on temporary network glitch!
+                    if (authScreen) authScreen.style.display = 'none';
+                    if (mainApp) mainApp.style.display = 'block';
                 });
         } else {
             this.user = null;
