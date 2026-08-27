@@ -118,41 +118,26 @@
                 </div>
             </div>
 
-            <!-- 3. FORGOT PASSWORD VIEW -->
+            <!-- 3. FORGOT PASSWORD VIEW (Email Credentials Directly) -->
             <div id="view-auth-forgot" style="display: none;">
-                <!-- Step 1: Request OTP -->
-                <div id="forgot-step-1">
-                    <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5; margin-bottom: 16px;">
-                        Enter your registered <strong>Email Address</strong> or <strong>Mobile Number</strong> to receive a secure password reset code.
-                    </p>
+                <p style="font-size: 12.5px; color: #cbd5e1; line-height: 1.5; margin-bottom: 16px;">
+                    Enter your registered <strong>Email Address</strong> or <strong>Mobile Number</strong>. We will immediately email your account login credentials to your registered email address.
+                </p>
+                <form id="form-forgot" onsubmit="return false;">
                     <div style="margin-bottom: 16px;">
-                        <input type="text" id="forgot-ident-input" placeholder="Registered Email or Mobile" style="width: 100%; background: #0b0c1a; border: 1px solid #272a4e; border-radius: 10px; padding: 12px 14px; color: #fff; font-size: 13.5px; outline: none; box-sizing: border-box;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Registered Email or Mobile</label>
+                        <div style="display: flex; align-items: center; background: #0b0c1a; border: 1px solid #272a4e; border-radius: 10px; overflow: hidden;">
+                            <span style="padding: 12px 13px; background: rgba(245,158,11,0.12); color: #fbbf24; font-weight: 700; font-size: 13px; border-right: 1px solid #272a4e;">✉️</span>
+                            <input type="text" id="forgot-ident-input" placeholder="e.g. name@example.com or 9876543210" style="flex: 1; background: transparent; border: none; padding: 12px 14px; color: #fff; font-size: 13.5px; outline: none;">
+                        </div>
                     </div>
-                    <button type="button" id="btn-send-reset-otp" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-weight: 700; font-size: 13.5px; padding: 12px; border: none; border-radius: 10px; cursor: pointer;">
-                        Send Reset Code via Email
+                    <button type="submit" id="btn-send-credentials" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-weight: 700; font-size: 14px; padding: 13px; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 20px rgba(245,158,11,0.35); transition: all 0.2s;">
+                        Email My Login Credentials
                     </button>
-                </div>
-
-                <!-- Step 2: Verify OTP & Enter New Password -->
-                <div id="forgot-step-2" style="display: none;">
-                    <div style="background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #93c5fd; margin-bottom: 14px;" id="forgot-target-msg">
-                        Reset code sent! Enter OTP and new password.
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; font-size: 11.5px; font-weight: 600; color: #cbd5e1; margin-bottom: 5px;">6-Digit OTP Code</label>
-                        <input type="text" id="reset-otp-input" maxlength="6" placeholder="e.g. 123456" style="width: 100%; background: #0b0c1a; border: 1px solid #272a4e; border-radius: 10px; padding: 11px 14px; color: #34d399; font-size: 16px; font-weight: 800; letter-spacing: 3px; text-align: center; outline: none; box-sizing: border-box;">
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: block; font-size: 11.5px; font-weight: 600; color: #cbd5e1; margin-bottom: 5px;">New Password</label>
-                        <input type="password" id="reset-newpw-input" placeholder="Enter new password" style="width: 100%; background: #0b0c1a; border: 1px solid #272a4e; border-radius: 10px; padding: 11px 14px; color: #fff; font-size: 13.5px; outline: none; box-sizing: border-box;">
-                    </div>
-                    <button type="button" id="btn-submit-new-pw" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; font-size: 13.5px; padding: 12px; border: none; border-radius: 10px; cursor: pointer;">
-                        Set New Password & Sign In
-                    </button>
-                </div>
+                </form>
 
                 <div style="margin-top: 16px; text-align: center;">
-                    <a href="javascript:void(0)" id="link-show-login-from-forgot" style="font-size: 12px; color: #60a5fa; font-weight: 700; text-decoration: none;">&larr; Back to Sign In</a>
+                    <a href="javascript:void(0)" id="link-show-login-from-forgot" style="font-size: 12.5px; color: #60a5fa; font-weight: 700; text-decoration: none;">&larr; Back to Sign In</a>
                 </div>
             </div>
 

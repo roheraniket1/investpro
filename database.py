@@ -321,8 +321,8 @@ class ScripDatabase:
         }
         return True, "Login successful!", user_data
 
-    def request_password_reset(self, identifier: str) -> Tuple[bool, str, Optional[Dict]]:
-        """Generate a 6-digit OTP code for password reset to registered email/mobile."""
+    def email_user_credentials(self, identifier: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Email user login credentials directly to their registered email address."""
         ident = (identifier or "").strip()
         clean_mob = sanitize_mobile(ident)
         clean_email = ident.lower() if "@" in ident else ""
@@ -336,77 +336,20 @@ class ScripDatabase:
             user = cur.fetchone()
 
         if not user:
-            return False, "No account found with this mobile number or email address.", None
-
-        import secrets
-        otp = f"{secrets.randbelow(900000) + 100000}"
-        now_dt = datetime.now()
-        exp_dt = (now_dt + timedelta(minutes=15)).isoformat()
-
-        self.conn.execute("""
-        INSERT INTO password_resets (user_id, identifier, otp_code, expires_at, created_at, used)
-        VALUES (?, ?, ?, ?, ?, 0)
-        """, (user["id"], ident, otp, exp_dt, now_dt.isoformat()))
-        self.conn.commit()
+            return False, "No account found with this mobile number or email address. Please register as a new user.", None
 
         user_email = user["email"] if "email" in user.keys() and user["email"] else ""
-        masked_email = ""
-        if user_email and "@" in user_email:
-            parts = user_email.split("@")
-            masked_email = f"{parts[0][:2]}***@{parts[1]}"
-        else:
-            masked_email = f"Mobile +91 {user['mobile'][-4:]}"
+        if not user_email or "@" not in user_email:
+            return False, "No email address is linked to this account. Please sign in using your mobile number and password.", None
 
-        # Dispatch Email asynchronously if email is registered
-        if user_email:
-            try:
-                import threading
-                from email_service import send_password_reset_email
-                user_name = user["full_name"] if "full_name" in user.keys() else "Trader"
-                threading.Thread(
-                    target=send_password_reset_email,
-                    args=(user_email, user_name, otp),
-                    daemon=True
-                ).start()
-            except Exception:
-                pass
-
-        return True, f"Password reset verification code dispatched to {masked_email}", {
-            "identifier": ident,
-            "masked_target": masked_email
-        }
-
-    def reset_password_with_otp(self, identifier: str, otp: str, new_password: str) -> Tuple[bool, str, Optional[Dict]]:
-        """Verify OTP and update user password."""
-        ident = (identifier or "").strip()
-        clean_otp = (otp or "").strip()
-        if not new_password or len(new_password) < 4:
-            return False, "New password must be at least 4 characters long.", None
-
-        cur = self.conn.execute("""
-        SELECT * FROM password_resets
-        WHERE (identifier=? OR identifier LIKE ?) AND otp_code=? AND used=0 ORDER BY id DESC LIMIT 1
-        """, (ident, f"%{ident}%", clean_otp))
-        reset_entry = cur.fetchone()
-
-        if not reset_entry:
-            return False, "Invalid or expired OTP code. Please request a new code.", None
-
-        user_id = reset_entry["user_id"]
-        # Mark used
-        self.conn.execute("UPDATE password_resets SET used=1 WHERE id=?", (reset_entry["id"],))
-
-        # Hash new password
-        pw_hash, salt = hash_password(new_password)
+        import secrets
+        # Generate a clean, memorable temporary password
+        temp_pw = f"InvestPro@{secrets.randbelow(9000) + 1000}"
+        pw_hash, salt = hash_password(temp_pw)
         now_str = datetime.now().isoformat()
-        self.conn.execute("UPDATE users SET password_hash=?, salt=?, last_login=? WHERE id=?", (pw_hash, salt, now_str, user_id))
 
-        # Generate new session token
-        token, expires_at = generate_session_token()
-        self.conn.execute("""
-        INSERT INTO user_sessions (token, user_id, created_at, expires_at)
-        VALUES (?, ?, ?, ?)
-        """, (token, user_id, now_str, expires_at))
+        # Update password in DB
+        self.conn.execute("UPDATE users SET password_hash=?, salt=?, last_login=? WHERE id=?", (pw_hash, salt, now_str, user["id"]))
         self.conn.commit()
 
         try:
@@ -414,21 +357,23 @@ class ScripDatabase:
         except Exception:
             pass
 
-        profile = self.get_user_profile(user_id)
-        cur_u = self.conn.execute("SELECT * FROM users WHERE id=?", (user_id,))
-        user = cur_u.fetchone()
+        # Send email asynchronously
+        import threading
+        from email_service import send_credentials_email
+        user_name = user["full_name"] if "full_name" in user.keys() else "Trader"
+        threading.Thread(
+            target=send_credentials_email,
+            args=(user_email, user_name, user["mobile"], temp_pw),
+            daemon=True
+        ).start()
 
-        user_data = {
-            "id": user_id,
-            "mobile": user["mobile"],
-            "email": user["email"] if "email" in user.keys() else "",
-            "full_name": user["full_name"],
-            "virtual_balance": profile.get("virtual_balance", 1000000.0),
-            "initial_capital": profile.get("initial_capital", 1000000.0),
-            "watchlist": profile.get("watchlist", []),
-            "token": token
+        parts = user_email.split("@")
+        masked_email = f"{parts[0][:2]}***@{parts[1]}"
+
+        return True, f"Login credentials have been emailed to {masked_email}", {
+            "identifier": ident,
+            "masked_target": masked_email
         }
-        return True, "Password reset successfully! You are now signed in.", user_data
 
     def wipe_all_accounts_and_trades(self) -> bool:
         """Wipe all user accounts, profiles, sessions, and paper trades from local DB and Cloudflare KV."""

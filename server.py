@@ -1394,17 +1394,10 @@ async def api_user_login(req: UserLoginRequest):
 
 @app.post("/api/user/forgot-password")
 async def api_user_forgot_password(req: ForgotPasswordRequest):
-    success, msg, data = db.request_password_reset(req.identifier)
+    success, msg, data = db.email_user_credentials(req.identifier)
     if not success:
         raise HTTPException(status_code=404, detail=msg)
     return {"status": "success", "message": msg, "data": data}
-
-@app.post("/api/user/reset-password")
-async def api_user_reset_password(req: ResetPasswordRequest):
-    success, msg, user_data = db.reset_password_with_otp(req.identifier, req.otp, req.new_password)
-    if not success:
-        raise HTTPException(status_code=400, detail=msg)
-    return {"status": "success", "message": msg, "user": user_data}
 
 @app.post("/api/user/wipe-all")
 async def api_user_wipe_all():

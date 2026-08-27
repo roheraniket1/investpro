@@ -302,102 +302,61 @@ class KotakNeoPro {
             };
         }
 
-        // 3. FORGOT PASSWORD (STEP 1: SEND OTP)
-        let activeResetIdentifier = "";
-        const btnSendResetOtp = document.getElementById('btn-send-reset-otp');
+        // 3. FORGOT PASSWORD (EMAIL CREDENTIALS DIRECTLY)
+        const btnSendCredentials = document.getElementById('btn-send-credentials');
         const forgotIdentInput = document.getElementById('forgot-ident-input');
+        const formForgot = document.getElementById('form-forgot');
 
-        if (btnSendResetOtp) {
-            btnSendResetOtp.onclick = async () => {
-                const ident = (forgotIdentInput ? forgotIdentInput.value : '').trim();
-                if (!ident) {
-                    showAlert('Please enter your registered email or mobile number.');
-                    return;
+        const handleSendCredentials = async () => {
+            const ident = (forgotIdentInput ? forgotIdentInput.value : '').trim();
+            if (!ident) {
+                showAlert('Please enter your registered email or mobile number.');
+                return;
+            }
+
+            if (btnSendCredentials) {
+                btnSendCredentials.disabled = true;
+                btnSendCredentials.textContent = 'Sending Credentials...';
+            }
+
+            try {
+                const res = await fetch('/api/user/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: ident })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || 'User not found');
                 }
 
-                btnSendResetOtp.disabled = true;
-                btnSendResetOtp.textContent = 'Sending Code...';
+                const target = (data.data && data.data.masked_target) ? data.data.masked_target : ident;
+                showAlert(`✅ Your login credentials have been sent to ${target}! Please check your email inbox and sign in.`, true);
+                
+                // Pre-fill login identifier and switch to login view after 2.5s
+                setTimeout(() => {
+                    const loginIdentInput = document.getElementById('login-ident-input');
+                    if (loginIdentInput) loginIdentInput.value = ident;
+                    showView('login');
+                    showAlert(`Login credentials sent to ${target}. Enter your password to sign in.`, true);
+                }, 2500);
 
-                try {
-                    const res = await fetch('/api/user/forgot-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ identifier: ident })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                        throw new Error(data.detail || 'User not found');
-                    }
-
-                    activeResetIdentifier = ident;
-                    const target = (data.data && data.data.masked_target) ? data.data.masked_target : ident;
-
-                    if (forgotStep1) forgotStep1.style.display = 'none';
-                    if (forgotStep2) forgotStep2.style.display = 'block';
-                    if (forgotTargetMsg) {
-                        forgotTargetMsg.innerHTML = `✅ A 6-digit password reset verification code has been dispatched to <strong>${target}</strong>.<br><span style="color:#cbd5e1; font-size:11.5px;">Please check your email inbox/spam folder and enter the OTP below.</span>`;
-                    }
-                    const resetOtpInput = document.getElementById('reset-otp-input');
-                    if (resetOtpInput) {
-                        resetOtpInput.value = '';
-                        resetOtpInput.focus();
-                    }
-
-                    showAlert(`Verification code dispatched to ${target}!`, true);
-                } catch (err) {
-                    showAlert(err.message || 'Error requesting reset code');
-                } finally {
-                    btnSendResetOtp.disabled = false;
-                    btnSendResetOtp.textContent = 'Send Reset Code via Email';
+            } catch (err) {
+                showAlert(err.message || 'Error emailing credentials');
+            } finally {
+                if (btnSendCredentials) {
+                    btnSendCredentials.disabled = false;
+                    btnSendCredentials.textContent = 'Email My Login Credentials';
                 }
-            };
-        }
+            }
+        };
 
-        // 4. FORGOT PASSWORD (STEP 2: VERIFY & SET NEW PASSWORD)
-        const btnSubmitNewPw = document.getElementById('btn-submit-new-pw');
-        const resetOtpInput = document.getElementById('reset-otp-input');
-        const resetNewPwInput = document.getElementById('reset-newpw-input');
-
-        if (btnSubmitNewPw) {
-            btnSubmitNewPw.onclick = async () => {
-                const otp = (resetOtpInput ? resetOtpInput.value : '').trim();
-                const newPw = (resetNewPwInput ? resetNewPwInput.value : '').trim();
-
-                if (!otp || otp.length !== 6) {
-                    showAlert('Please enter the 6-digit OTP code.');
-                    return;
-                }
-                if (!newPw || newPw.length < 4) {
-                    showAlert('New password must be at least 4 characters.');
-                    return;
-                }
-
-                btnSubmitNewPw.disabled = true;
-                btnSubmitNewPw.textContent = 'Updating Password...';
-
-                try {
-                    const res = await fetch('/api/user/reset-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            identifier: activeResetIdentifier,
-                            otp: otp,
-                            new_password: newPw
-                        })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                        throw new Error(data.detail || 'Password reset failed');
-                    }
-                    enterTerminal(data.user);
-                } catch (err) {
-                    showAlert(err.message || 'Failed to update password');
-                } finally {
-                    btnSubmitNewPw.disabled = false;
-                    btnSubmitNewPw.textContent = 'Set New Password & Sign In';
-                }
-            };
-        }
+        if (btnSendCredentials) btnSendCredentials.onclick = handleSendCredentials;
+        if (formForgot) formForgot.onsubmit = (e) => {
+            e.preventDefault();
+            handleSendCredentials();
+            return false;
+        };
 
         // Guest Explore Button
         const guestExploreBtn = document.getElementById('guest-explore-btn');
