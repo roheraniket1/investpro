@@ -18,16 +18,25 @@ class KotakNeoPro {
         this.initSignals();
         this.initScreener();
 
-        document.getElementById('analyze-btn').addEventListener('click', () => {
-            const val = document.getElementById('symbol-search').value.trim();
-            if (val) this.analyzeStock(val);
-        });
+        const analyzeBtn = document.getElementById('analyze-btn');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', () => {
+                const sInput = document.getElementById('symbol-search');
+                const val = sInput ? sInput.value.trim() : '';
+                if (val) this.analyzeStock(val);
+            });
+        }
 
-        document.getElementById('load-oc-btn').addEventListener('click', () => {
-            const sym = document.getElementById('oc-symbol').value.trim();
-            const exp = document.getElementById('oc-expiry').value;
-            if (sym && exp) this.loadOptionChain(sym, exp);
-        });
+        const loadOcBtn = document.getElementById('load-oc-btn');
+        if (loadOcBtn) {
+            loadOcBtn.addEventListener('click', () => {
+                const symEl = document.getElementById('oc-symbol');
+                const expEl = document.getElementById('oc-expiry');
+                const sym = symEl ? symEl.value.trim() : '';
+                const exp = expEl ? expEl.value : '';
+                if (sym && exp) this.loadOptionChain(sym, exp);
+            });
+        }
 
         // Initialize User Authentication first so session is restored before any data loads
         this.initAuth();
