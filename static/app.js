@@ -331,18 +331,19 @@ class KotakNeoPro {
 
                     activeResetIdentifier = ident;
                     const target = (data.data && data.data.masked_target) ? data.data.masked_target : ident;
-                    const previewOtp = (data.data && data.data.otp_preview) ? data.data.otp_preview : "";
 
                     if (forgotStep1) forgotStep1.style.display = 'none';
                     if (forgotStep2) forgotStep2.style.display = 'block';
                     if (forgotTargetMsg) {
-                        forgotTargetMsg.innerHTML = `✅ Password reset code sent to <strong>${target}</strong>.<br><small style="color:#cbd5e1;">(Verification Code: <strong>${previewOtp}</strong>)</small>`;
+                        forgotTargetMsg.innerHTML = `✅ A 6-digit password reset verification code has been dispatched to <strong>${target}</strong>.<br><span style="color:#cbd5e1; font-size:11.5px;">Please check your email inbox/spam folder and enter the OTP below.</span>`;
                     }
-                    // Auto fill OTP in input for convenience
                     const resetOtpInput = document.getElementById('reset-otp-input');
-                    if (resetOtpInput && previewOtp) resetOtpInput.value = previewOtp;
+                    if (resetOtpInput) {
+                        resetOtpInput.value = '';
+                        resetOtpInput.focus();
+                    }
 
-                    showAlert(`Reset code sent to ${target}! Enter new password below.`, true);
+                    showAlert(`Verification code dispatched to ${target}!`, true);
                 } catch (err) {
                     showAlert(err.message || 'Error requesting reset code');
                 } finally {
