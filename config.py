@@ -33,6 +33,13 @@ KOTAK_TOTP_SECRET = os.getenv("KOTAK_TOTP_SECRET")
 DATABASE_PATH = "data/scrip_master.db"
 
 # -------------------------------
+# Cloudflare KV Permanent Storage
+# -------------------------------
+CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "76b5ebb198d3684090f8f560f21231d7")
+CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "")
+CLOUDFLARE_KV_NAMESPACE_ID = os.getenv("CLOUDFLARE_KV_NAMESPACE_ID", "cb5b0241ef5e4aec8d8da49bd6fe625d")
+
+# -------------------------------
 # Logs
 # -------------------------------
 

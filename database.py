@@ -1,3 +1,4 @@
+from cloud_sync import cloud_kv
 """
 database.py
 SQLite Database for Kotak Neo Scrip Master, Trade Signals, Multi-User Auth, and Paper Portfolios
@@ -53,6 +54,11 @@ class ScripDatabase:
             pass
 
         self.create_tables()
+        # Restore persistent user accounts, profiles, and trades from Cloudflare KV
+        try:
+            cloud_kv.restore_all_user_data_to_db(self.conn)
+        except Exception:
+            pass
 
     def create_tables(self):
 
@@ -217,6 +223,10 @@ class ScripDatabase:
             """, (token, user_id, now_str, expires_at))
 
             self.conn.commit()
+            try:
+                cloud_kv.async_backup_all_user_data(self.conn)
+            except Exception:
+                pass
 
             user_data = {
                 "id": user_id,
@@ -316,6 +326,10 @@ class ScripDatabase:
         """Logout: invalidate session token."""
         self.conn.execute("DELETE FROM user_sessions WHERE token=?", (token,))
         self.conn.commit()
+        try:
+            cloud_kv.async_backup_all_user_data(self.conn)
+        except Exception:
+            pass
         return True
 
     def get_user_profile(self, user_id: int) -> Dict:
@@ -647,6 +661,10 @@ class ScripDatabase:
         ) VALUES (?,?,?,?,?,?,?,?,?)
         """, (user_id, symbol, direction, qty, entry_price, target, stoploss, "ACTIVE", datetime.now().isoformat()))
         self.conn.commit()
+        try:
+            cloud_kv.async_backup_all_user_data(self.conn)
+        except Exception:
+            pass
         return cur.lastrowid
 
     def get_active_paper_trades(self, user_id: Optional[int] = None):
@@ -699,6 +717,10 @@ class ScripDatabase:
         self.conn.execute("DELETE FROM paper_portfolio WHERE user_id=?", (user_id,))
         self.update_paper_balance(1000000.0, user_id)
         self.conn.commit()
+        try:
+            cloud_kv.async_backup_all_user_data(self.conn)
+        except Exception:
+            pass
 
     def close(self):
         self.conn.close()
