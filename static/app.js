@@ -76,6 +76,8 @@ class KotakNeoPro {
     }
 
     initAuth() {
+        const authScreen = document.getElementById('auth-screen');
+        const mainApp = document.getElementById('main-app-container');
         const authBtn = document.getElementById('auth-btn');
         const authModal = document.getElementById('auth-modal');
         const profileModal = document.getElementById('profile-modal');
@@ -259,10 +261,9 @@ class KotakNeoPro {
                     localStorage.setItem('investpro_session_token', data.user.token);
 
                     updateAuthUI();
-                    if (authModal) {
-                        authModal.style.display = 'none';
-                        if (closeAuthBtn) closeAuthBtn.style.display = 'block';
-                    }
+                    if (authScreen) authScreen.style.display = 'none';
+                    if (mainApp) mainApp.style.display = 'block';
+                    if (authModal) authModal.style.display = 'none';
                     this.showNotification(`Namaste, ${data.user.full_name} Ji! Logged in successfully.`, 'success');
                     this.loadPaperPortfolio();
                 } catch (err) {
@@ -289,10 +290,8 @@ class KotakNeoPro {
             localStorage.removeItem('investpro_session_token');
             updateAuthUI();
             if (profileModal) profileModal.style.display = 'none';
-            if (authModal) {
-                authModal.style.display = 'flex';
-                if (closeAuthBtn) closeAuthBtn.style.display = 'none';
-            }
+            if (authScreen) authScreen.style.display = 'flex';
+            if (mainApp) mainApp.style.display = 'none';
             this.showNotification('Logged out. Please sign in to proceed.', 'info');
             this.loadPaperPortfolio();
         };
@@ -323,8 +322,9 @@ class KotakNeoPro {
         const guestExploreBtn = document.getElementById('guest-explore-btn');
         if (guestExploreBtn) {
             guestExploreBtn.onclick = () => {
-                if (authModal) authModal.style.display = 'none';
-                this.showNotification('Welcome! Exploring as Guest Trader.', 'info');
+                if (authScreen) authScreen.style.display = 'none';
+                if (mainApp) mainApp.style.display = 'block';
+                this.showNotification('Welcome! Exploring InvestPro Terminal in Guest Mode.', 'info');
             };
         }
 
@@ -340,55 +340,40 @@ class KotakNeoPro {
         // Restore saved session on startup - fetch fresh user data from DB
         const savedToken = localStorage.getItem('investpro_session_token');
         if (savedToken) {
-            // Show a brief "restoring session" state before auth modal can show
-            if (authModal) authModal.style.display = 'none';
-
             fetch('/api/user/profile', { headers: this.getAuthHeaders() })
                 .then(res => res.json())
                 .then(data => {
                     if (data.is_authenticated && data.user) {
                         this.user = data.user;
-                        // Sync token from server in case it refreshed
                         if (data.user.token) {
                             this.sessionToken = data.user.token;
                             localStorage.setItem('investpro_session_token', data.user.token);
                         }
                         updateAuthUI();
-                        if (authModal) {
-                            authModal.style.display = 'none';
-                            if (closeAuthBtn) closeAuthBtn.style.display = 'block';
-                        }
+                        if (authScreen) authScreen.style.display = 'none';
+                        if (mainApp) mainApp.style.display = 'block';
                         this.showNotification(`Welcome back, ${data.user.full_name} Ji! ₹${(data.user.virtual_balance/100000).toFixed(1)}L active.`, 'success');
                         this.loadPaperPortfolio();
                     } else {
-                        // Token expired - clear and force login
                         this.sessionToken = null;
                         this.user = null;
                         localStorage.removeItem('investpro_session_token');
                         updateAuthUI();
-                        if (authModal) {
-                            authModal.style.display = 'flex';
-                            if (closeAuthBtn) closeAuthBtn.style.display = 'none';
-                        }
+                        if (authScreen) authScreen.style.display = 'flex';
+                        if (mainApp) mainApp.style.display = 'none';
                     }
                 })
                 .catch(() => {
-                    // Network error - still show app but prompt login
                     this.user = null;
                     updateAuthUI();
-                    if (authModal) {
-                        authModal.style.display = 'flex';
-                        if (closeAuthBtn) closeAuthBtn.style.display = 'none';
-                    }
+                    if (authScreen) authScreen.style.display = 'flex';
+                    if (mainApp) mainApp.style.display = 'none';
                 });
         } else {
-            // No saved session - require login
             this.user = null;
             updateAuthUI();
-            if (authModal) {
-                authModal.style.display = 'flex';
-                if (closeAuthBtn) closeAuthBtn.style.display = 'none';
-            }
+            if (authScreen) authScreen.style.display = 'flex';
+            if (mainApp) mainApp.style.display = 'none';
         }
     }
 
