@@ -657,6 +657,7 @@ class KotakNeoPro {
             
             this.ws.onmessage = (event) => {
                 try {
+                    this.lastWsTickTime = Date.now();
                     const data = JSON.parse(event.data);
                     this.setLiveConnectionStatus(true);
                     if (data.type === 'paper_alert') {
@@ -697,9 +698,15 @@ class KotakNeoPro {
             }, 15000);
         }
 
-        // Live Market Price Polling Streamer (continuous real-time sync for Mobile & Desktop)
+        // Live Market Price Polling Streamer (fallback sync for Mobile & Desktop)
         if (!this.quoteSyncInterval) {
             this.quoteSyncInterval = setInterval(async () => {
+                // Skip redundant HTTP poll if WebSocket is active and streaming live
+                if (this.ws && this.ws.readyState === WebSocket.OPEN && (Date.now() - (this.lastWsTickTime || 0) < 6000)) {
+                    return;
+                }
+                if (document.hidden) return; // Save bandwidth when tab is in background
+
                 try {
                     const symsToPoll = new Set(['NIFTY 50', 'BANK NIFTY', 'NIFTY IT', 'SENSEX']);
                     if (this.activeSymbol) symsToPoll.add(this.activeSymbol);
@@ -716,7 +723,7 @@ class KotakNeoPro {
                         }
                     }
                 } catch(e) {}
-            }, 2000);
+            }, 3000);
         }
     }
 
@@ -878,33 +885,121 @@ class KotakNeoPro {
         const dd = document.getElementById('search-dropdown');
         this.currentSearchCategory = '';
 
+        const INSTANT_SCRIPS = [
+            { symbol: "NIFTY 50", name: "NIFTY 50 Index", exchange: "NSE", category_badge: "📊 Index", ltp: 24150.0 },
+            { symbol: "BANK NIFTY", name: "NIFTY Bank Index", exchange: "NSE", category_badge: "📊 Index", ltp: 51200.0 },
+            { symbol: "FINNIFTY", name: "NIFTY Financial Services Index", exchange: "NSE", category_badge: "📊 Index", ltp: 23800.0 },
+            { symbol: "SENSEX", name: "BSE SENSEX Index", exchange: "BSE", category_badge: "📊 Index", ltp: 79800.0 },
+            { symbol: "MIDCPNIFTY", name: "NIFTY Midcap Select Index", exchange: "NSE", category_badge: "📊 Index", ltp: 12400.0 },
+            { symbol: "RELIANCE", name: "Reliance Industries Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1291.20 },
+            { symbol: "TCS", name: "Tata Consultancy Services Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 2248.60 },
+            { symbol: "HDFCBANK", name: "HDFC Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 712.40 },
+            { symbol: "ICICIBANK", name: "ICICI Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1444.10 },
+            { symbol: "INFY", name: "Infosys Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1109.0 },
+            { symbol: "BHARTIARTL", name: "Bharti Airtel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1899.40 },
+            { symbol: "SBIN", name: "State Bank of India", exchange: "NSE", category_badge: "📈 Stock", ltp: 1047.20 },
+            { symbol: "ITC", name: "ITC Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 269.25 },
+            { symbol: "LT", name: "Larsen & Toubro Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 4044.90 },
+            { symbol: "TATASTEEL", name: "Tata Steel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 154.20 },
+            { symbol: "TATAMOTORS", name: "Tata Motors Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 980.0 },
+            { symbol: "ADANIENT", name: "Adani Enterprises Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 2780.0 },
+            { symbol: "ADANIPORTS", name: "Adani Ports and SEZ Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1340.0 },
+            { symbol: "BAJFINANCE", name: "Bajaj Finance Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1089.50 },
+            { symbol: "MARUTI", name: "Maruti Suzuki India Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 12400.0 },
+            { symbol: "SUNPHARMA", name: "Sun Pharmaceutical Industries Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1720.0 },
+            { symbol: "TITAN", name: "Titan Company Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 3480.0 },
+            { symbol: "ULTRACEMCO", name: "UltraTech Cement Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 11200.0 },
+            { symbol: "WIPRO", name: "Wipro Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 540.0 },
+            { symbol: "JSWSTEEL", name: "JSW Steel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 940.0 },
+            { symbol: "HINDALCO", name: "Hindalco Industries Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1034.0 },
+            { symbol: "GPPL", name: "Gujarat Pipavav Port Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 171.15 },
+            { symbol: "ZOMATO", name: "Zomato Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 260.0 },
+            { symbol: "CANBK", name: "Canara Bank", exchange: "NSE", category_badge: "📈 Stock", ltp: 112.0 },
+            { symbol: "PNB", name: "Punjab National Bank", exchange: "NSE", category_badge: "📈 Stock", ltp: 108.0 },
+            { symbol: "BANKBARODA", name: "Bank of Baroda", exchange: "NSE", category_badge: "📈 Stock", ltp: 245.0 },
+            { symbol: "JIOFIN", name: "Jio Financial Services Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 320.0 },
+            { symbol: "KOTAKBANK", name: "Kotak Mahindra Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1820.0 },
+            { symbol: "AXISBANK", name: "Axis Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1180.0 },
+            { symbol: "GOLD", name: "Gold 1 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 72400.0 },
+            { symbol: "GOLDM", name: "Gold Mini 100g MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 72450.0 },
+            { symbol: "SILVER", name: "Silver 30 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 84500.0 },
+            { symbol: "SILVERM", name: "Silver Mini 5 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 84510.0 },
+            { symbol: "SILVERMIC", name: "Silver Micro 1 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 84520.0 },
+            { symbol: "CRUDEOIL", name: "Crude Oil 100 BBL MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 7686.0 },
+            { symbol: "CRUDEOILM", name: "Crude Oil Mini 10 BBL MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 7686.0 },
+            { symbol: "NATURALGAS", name: "Natural Gas 1250 MMBTU MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 185.20 },
+            { symbol: "COPPER", name: "Copper 2500 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 795.40 },
+            { symbol: "ZINC", name: "Zinc 5000 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 265.0 },
+            { symbol: "ALUMINIUM", name: "Aluminium 5000 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 228.0 }
+        ];
+
         const doSearch = async () => {
-            const val = input.value.trim();
-            if (!val) {
-                dd.style.display = 'none';
+            const rawVal = (input ? input.value : '').trim();
+            if (!rawVal) {
+                if (dd) dd.style.display = 'none';
                 return;
             }
+            const qUpper = rawVal.toUpperCase();
+
+            // 1. Instant 0ms Local Filter
+            const instantMatches = INSTANT_SCRIPS.filter(s => 
+                s.symbol.toUpperCase().includes(qUpper) || 
+                s.name.toUpperCase().includes(qUpper)
+            );
+
+            if (instantMatches.length > 0) {
+                this.renderSearchDropdown(instantMatches, dd, (selectedSym) => {
+                    input.value = selectedSym;
+                    if (dd) dd.style.display = 'none';
+                    this.analyzeStock(selectedSym);
+                });
+            }
+
+            // 2. Fetch extended search in background
             try {
-                let url = `/api/search?q=${encodeURIComponent(val)}&limit=15`;
+                let url = `/api/search?q=${encodeURIComponent(rawVal)}&limit=15`;
                 if (this.currentSearchCategory) {
                     url += `&category=${encodeURIComponent(this.currentSearchCategory)}`;
                 }
                 const res = await fetch(url);
                 const json = await res.json();
-                this.renderSearchDropdown(json.results || [], dd, (selectedSym) => {
-                    input.value = selectedSym;
-                    dd.style.display = 'none';
-                    this.analyzeStock(selectedSym);
-                });
+                if (json && json.results && json.results.length > 0) {
+                    this.renderSearchDropdown(json.results, dd, (selectedSym) => {
+                        input.value = selectedSym;
+                        if (dd) dd.style.display = 'none';
+                        this.analyzeStock(selectedSym);
+                    });
+                }
             } catch (err) {
                 console.error("Search error:", err);
             }
         };
 
-        input.addEventListener('input', () => {
-            clearTimeout(this.searchTimeout);
-            this.searchTimeout = setTimeout(doSearch, 80);
-        });
+        if (input) {
+            input.addEventListener('input', () => {
+                const rawVal = input.value.trim();
+                if (!rawVal) {
+                    if (dd) dd.style.display = 'none';
+                    return;
+                }
+                // Show instant matches immediately
+                const qUpper = rawVal.toUpperCase();
+                const instantMatches = INSTANT_SCRIPS.filter(s => 
+                    s.symbol.toUpperCase().includes(qUpper) || 
+                    s.name.toUpperCase().includes(qUpper)
+                );
+                if (instantMatches.length > 0) {
+                    this.renderSearchDropdown(instantMatches, dd, (selectedSym) => {
+                        input.value = selectedSym;
+                        if (dd) dd.style.display = 'none';
+                        this.analyzeStock(selectedSym);
+                    });
+                }
+
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(doSearch, 160);
+            });
+        }
 
         // Manual Setup Finder Autocomplete
         const manualInput = document.getElementById('manual-instrument-input');
@@ -917,20 +1012,30 @@ class KotakNeoPro {
                     manualDd.style.display = 'none';
                     return;
                 }
+                const qUpper = val.toUpperCase();
+                const instantMatches = INSTANT_SCRIPS.filter(s => s.symbol.toUpperCase().includes(qUpper) || s.name.toUpperCase().includes(qUpper));
+                if (instantMatches.length > 0) {
+                    this.renderSearchDropdown(instantMatches, manualDd, (selectedSym) => {
+                        manualInput.value = selectedSym;
+                        manualDd.style.display = 'none';
+                        const btn = document.getElementById('manual-find-setup-btn');
+                        if (btn) btn.click();
+                    });
+                }
                 this.manualSearchTimeout = setTimeout(async () => {
                     try {
                         const res = await fetch(`/api/search?q=${encodeURIComponent(val)}&limit=12`);
                         const json = await res.json();
-                        this.renderSearchDropdown(json.results || [], manualDd, (selectedSym) => {
-                            manualInput.value = selectedSym;
-                            manualDd.style.display = 'none';
-                            const btn = document.getElementById('manual-find-setup-btn');
-                            if (btn) btn.click();
-                        });
-                    } catch (e) {
-                        console.error("Manual search error:", e);
-                    }
-                }, 250);
+                        if (json && json.results) {
+                            this.renderSearchDropdown(json.results, manualDd, (selectedSym) => {
+                                manualInput.value = selectedSym;
+                                manualDd.style.display = 'none';
+                                const btn = document.getElementById('manual-find-setup-btn');
+                                if (btn) btn.click();
+                            });
+                        }
+                    } catch (e) {}
+                }, 180);
             });
         }
 
@@ -945,19 +1050,28 @@ class KotakNeoPro {
                     ocDd.style.display = 'none';
                     return;
                 }
+                const qUpper = val.toUpperCase();
+                const instantMatches = INSTANT_SCRIPS.filter(s => s.symbol.toUpperCase().includes(qUpper) || s.name.toUpperCase().includes(qUpper));
+                if (instantMatches.length > 0) {
+                    this.renderSearchDropdown(instantMatches, ocDd, (selectedSym) => {
+                        ocInput.value = selectedSym;
+                        ocDd.style.display = 'none';
+                        this.loadExpiries(selectedSym);
+                    });
+                }
                 this.ocSearchTimeout = setTimeout(async () => {
                     try {
                         const res = await fetch(`/api/search?q=${encodeURIComponent(val)}&limit=10`);
                         const json = await res.json();
-                        this.renderSearchDropdown(json.results || [], ocDd, (selectedSym) => {
-                            ocInput.value = selectedSym;
-                            ocDd.style.display = 'none';
-                            this.loadExpiries(selectedSym);
-                        });
-                    } catch (e) {
-                        console.error("Option search error:", e);
-                    }
-                }, 250);
+                        if (json && json.results) {
+                            this.renderSearchDropdown(json.results, ocDd, (selectedSym) => {
+                                ocInput.value = selectedSym;
+                                ocDd.style.display = 'none';
+                                this.loadExpiries(selectedSym);
+                            });
+                        }
+                    } catch (e) {}
+                }, 180);
             });
         }
 
@@ -975,14 +1089,23 @@ class KotakNeoPro {
                 chip.style.borderColor = '#3b82f6';
                 chip.style.color = '#fff';
                 this.currentSearchCategory = chip.dataset.cat || '';
-                if (input.value.trim()) {
+                if (input && input.value.trim()) {
                     doSearch();
                 }
             });
         });
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-container') && !e.target.closest('#manual-search-dropdown') && !e.target.closest('#oc-search-dropdown') && e.target !== manualInput && e.target !== ocInput) {
+        // Safe pointerdown listener for clicking outside
+        document.addEventListener('pointerdown', (e) => {
+            const isInsideSearch = e.target.closest('.search-container') ||
+                e.target.closest('#search-dropdown') ||
+                e.target.closest('#manual-search-dropdown') ||
+                e.target.closest('#oc-search-dropdown') ||
+                e.target === manualInput ||
+                e.target === ocInput ||
+                e.target === input;
+
+            if (!isInsideSearch) {
                 if (dd) dd.style.display = 'none';
                 if (manualDd) manualDd.style.display = 'none';
                 if (ocDd) ocDd.style.display = 'none';
@@ -1002,7 +1125,7 @@ class KotakNeoPro {
         data.forEach(item => {
             const div = document.createElement('div');
             div.className = 'ac-item';
-            div.style.cssText = 'padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: all 0.15s ease;';
+            div.style.cssText = 'padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: background 0.1s ease; user-select: none; -webkit-user-select: none;';
             
             const badge = item.category_badge || '📈 Stock';
             const badgeColor = item.exchange === 'MCX' ? '#f59e0b' : (item.category === 'OPTION' ? '#c084fc' : (item.category === 'FUTURE' ? '#38bdf8' : '#34d399'));
@@ -1013,42 +1136,49 @@ class KotakNeoPro {
             const displayName = item.name && item.name !== item.symbol ? item.name : (item.trading_symbol || item.symbol);
             
             div.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
+                <div style="display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; pointer-events: none;">
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span style="font-weight: 700; color: #ffffff; font-size: 1.05rem; letter-spacing: 0.3px;">${item.symbol}</span>
                         <span style="font-size: 0.74rem; padding: 2px 7px; border-radius: 5px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; font-weight: 700; white-space: nowrap;">${badge}</span>
                         <span style="font-size: 0.74rem; padding: 2px 6px; border-radius: 5px; background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); font-weight: 700;">${item.exchange || 'NSE'}</span>
                     </div>
-                    <div style="font-size: 0.86rem; color: #cbd5e1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">
+                    <div style="font-size: 0.84rem; color: #cbd5e1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">
                         ${displayName}
                     </div>
                 </div>
-                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0;">
+                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; pointer-events: none;">
                     <span style="font-size: 1.05rem; font-weight: 700; color: var(--bullish-green);">${ltpText}</span>
                     <span style="font-size: 0.76rem; color: #94a3b8; font-weight: 600;">Lot: ${item.lot_size || 1}</span>
                 </div>
             `;
             
-            div.addEventListener('mouseenter', () => { div.style.background = 'rgba(59,130,246,0.22)'; });
+            div.addEventListener('mouseenter', () => { div.style.background = 'rgba(59,130,246,0.25)'; });
             div.addEventListener('mouseleave', () => { div.style.background = 'transparent'; });
             
             const handleSelect = (e) => {
-                e.preventDefault();
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
                 if (onSelect) {
                     onSelect(item.symbol);
                 } else {
-                    document.getElementById('symbol-search').value = item.symbol;
+                    const symInput = document.getElementById('symbol-search');
+                    if (symInput) symInput.value = item.symbol;
                     dd.style.display = 'none';
                     this.analyzeStock(item.symbol);
                 }
             };
             
+            // Fast pointerdown + click handling
+            div.addEventListener('pointerdown', handleSelect);
             div.addEventListener('click', handleSelect);
             dd.appendChild(div);
         });
-        dd.style.display = 'block';
 
-        // Smart positioning: on mobile use fixed positioning to escape parent overflow clipping
+        dd.style.display = 'block';
+        dd.style.zIndex = '999999';
+
         const isMobile = window.innerWidth <= 960;
         if (isMobile) {
             const inputEl = dd.previousElementSibling || dd.parentElement.querySelector('input');
