@@ -6,7 +6,7 @@ SQLite Database for Kotak Neo Scrip Master, Trade Signals, Multi-User Auth, and 
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
