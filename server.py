@@ -1405,6 +1405,17 @@ async def api_user_wipe_all():
     db.wipe_all_accounts_and_trades()
     return {"status": "success", "message": "All user accounts, profiles, and trades wiped successfully."}
 
+@app.post("/api/user/test-email")
+async def api_user_test_email(req: ForgotPasswordRequest):
+    from email_service import send_credentials_email
+    success, detail = send_credentials_email(
+        to_email=req.identifier,
+        user_name="Niket Rohera",
+        mobile="9265708153",
+        temp_password="InvestPro@2026"
+    )
+    return {"success": success, "detail": detail, "recipient": req.identifier}
+
 @app.get("/api/user/profile")
 async def api_user_get_profile(request: Request):
     user = get_user_from_req(request)
