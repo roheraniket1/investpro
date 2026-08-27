@@ -98,10 +98,20 @@ class UserRegisterRequest(BaseModel):
     mobile: str
     password: str
     full_name: Optional[str] = ""
+    email: Optional[str] = ""
 
 class UserLoginRequest(BaseModel):
-    mobile: str
+    identifier: Optional[str] = None
+    mobile: Optional[str] = None
     password: str
+
+class ForgotPasswordRequest(BaseModel):
+    identifier: str
+
+class ResetPasswordRequest(BaseModel):
+    identifier: str
+    otp: str
+    new_password: str
 
 class UserProfileUpdateRequest(BaseModel):
     watchlist: Optional[list[str]] = None
@@ -1367,17 +1377,40 @@ def get_user_from_req(request: Request) -> Optional[dict]:
 
 @app.post("/api/user/register")
 async def api_user_register(req: UserRegisterRequest):
-    success, msg, user_data = db.register_user(req.mobile, req.password, req.full_name)
+    success, msg, user_data = db.register_user(req.mobile, req.password, req.full_name, req.email)
     if not success:
         raise HTTPException(status_code=400, detail=msg)
     return {"status": "success", "message": msg, "user": user_data}
 
 @app.post("/api/user/login")
 async def api_user_login(req: UserLoginRequest):
-    success, msg, user_data = db.authenticate_user(req.mobile, req.password)
+    ident = req.identifier or req.mobile
+    if not ident:
+        raise HTTPException(status_code=400, detail="Please enter your mobile number or email address.")
+    success, msg, user_data = db.authenticate_user(ident, req.password)
     if not success:
         raise HTTPException(status_code=401, detail=msg)
     return {"status": "success", "message": msg, "user": user_data}
+
+@app.post("/api/user/forgot-password")
+async def api_user_forgot_password(req: ForgotPasswordRequest):
+    success, msg, data = db.request_password_reset(req.identifier)
+    if not success:
+        raise HTTPException(status_code=404, detail=msg)
+    return {"status": "success", "message": msg, "data": data}
+
+@app.post("/api/user/reset-password")
+async def api_user_reset_password(req: ResetPasswordRequest):
+    success, msg, user_data = db.reset_password_with_otp(req.identifier, req.otp, req.new_password)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"status": "success", "message": msg, "user": user_data}
+
+@app.post("/api/user/wipe-all")
+async def api_user_wipe_all():
+    """Wipe all user accounts and trades for clean slate."""
+    db.wipe_all_accounts_and_trades()
+    return {"status": "success", "message": "All user accounts, profiles, and trades wiped successfully."}
 
 @app.get("/api/user/profile")
 async def api_user_get_profile(request: Request):

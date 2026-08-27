@@ -75,88 +75,76 @@ class KotakNeoPro {
         return headers;
     }
 
-    initAuth() {
+        initAuth() {
         const authScreen = document.getElementById('auth-screen');
         const mainApp = document.getElementById('main-app-container');
-        const authBtn = document.getElementById('auth-btn');
-        const authModal = document.getElementById('auth-modal');
-        const profileModal = document.getElementById('profile-modal');
-        const closeAuthBtn = document.getElementById('close-auth-modal-btn');
-        const closeProfileBtn = document.getElementById('close-profile-modal-btn');
-        const tabLogin = document.getElementById('tab-auth-login');
-        const tabRegister = document.getElementById('tab-auth-register');
-        const nameGroup = document.getElementById('auth-name-group');
-        const submitBtn = document.getElementById('auth-submit-btn');
         const alertBox = document.getElementById('auth-alert-box');
-        const togglePwBtn = document.getElementById('toggle-pw-btn');
-        const pwInput = document.getElementById('auth-password-input');
-        const mobileInput = document.getElementById('auth-mobile-input');
-        const nameInput = document.getElementById('auth-fullname-input');
-        const resetPortfolioBtn = document.getElementById('btn-reset-user-portfolio');
-        const logoutBtn = document.getElementById('btn-logout-user');
+        const profileModal = document.getElementById('profile-modal');
+        const closeProfileBtn = document.getElementById('close-profile-modal-btn');
+        const authBtn = document.getElementById('auth-btn');
 
-        let authMode = 'login'; // 'login' or 'register'
+        // Views
+        const viewLogin = document.getElementById('view-auth-login');
+        const viewRegister = document.getElementById('view-auth-register');
+        const viewForgot = document.getElementById('view-auth-forgot');
+        const screenSubtitle = document.getElementById('auth-screen-subtitle');
 
-        const setAuthMode = (mode) => {
-            authMode = mode;
+        const forgotStep1 = document.getElementById('forgot-step-1');
+        const forgotStep2 = document.getElementById('forgot-step-2');
+        const forgotTargetMsg = document.getElementById('forgot-target-msg');
+
+        // Switch Views Helper
+        const showView = (viewName) => {
             if (alertBox) alertBox.style.display = 'none';
-            if (mode === 'login') {
-                if (tabLogin) { tabLogin.classList.add('active'); tabLogin.style.background = '#3b82f6'; tabLogin.style.color = '#fff'; }
-                if (tabRegister) { tabRegister.classList.remove('active'); tabRegister.style.background = 'transparent'; tabRegister.style.color = '#94a3b8'; }
-                if (nameGroup) nameGroup.style.display = 'none';
-                if (submitBtn) submitBtn.textContent = 'Sign In & Access Trading';
-            } else {
-                if (tabRegister) { tabRegister.classList.add('active'); tabRegister.style.background = '#3b82f6'; tabRegister.style.color = '#fff'; }
-                if (tabLogin) { tabLogin.classList.remove('active'); tabLogin.style.background = 'transparent'; tabLogin.style.color = '#94a3b8'; }
-                if (nameGroup) nameGroup.style.display = 'block';
-                if (submitBtn) submitBtn.textContent = 'Create Account (₹10L Capital)';
+            if (viewLogin) viewLogin.style.display = viewName === 'login' ? 'block' : 'none';
+            if (viewRegister) viewRegister.style.display = viewName === 'register' ? 'block' : 'none';
+            if (viewForgot) viewForgot.style.display = viewName === 'forgot' ? 'block' : 'none';
+
+            if (screenSubtitle) {
+                if (viewName === 'login') screenSubtitle.textContent = 'Institutional AI Market Terminal & Live Trading';
+                else if (viewName === 'register') screenSubtitle.textContent = 'Create Account & Receive ₹10,00,000 Virtual Capital';
+                else if (viewName === 'forgot') screenSubtitle.textContent = 'Reset Password via Registered Email or Mobile';
             }
         };
 
-        if (tabLogin) tabLogin.onclick = () => setAuthMode('login');
-        if (tabRegister) tabRegister.onclick = () => setAuthMode('register');
+        // Navigation Links
+        const linkShowRegister = document.getElementById('link-show-register');
+        const linkShowForgot = document.getElementById('link-show-forgot');
+        const linkShowLoginFromReg = document.getElementById('link-show-login-from-reg');
+        const linkShowLoginFromForgot = document.getElementById('link-show-login-from-forgot');
 
-        if (authBtn) {
-            authBtn.onclick = () => {
-                if (this.user && this.sessionToken) {
-                    // Open Profile Modal
-                    if (profileModal) profileModal.style.display = 'flex';
-                } else {
-                    // Open Login/Register Modal
-                    if (authModal) authModal.style.display = 'flex';
-                }
-            };
-        }
+        if (linkShowRegister) linkShowRegister.onclick = () => showView('register');
+        if (linkShowForgot) linkShowForgot.onclick = () => {
+            if (forgotStep1) forgotStep1.style.display = 'block';
+            if (forgotStep2) forgotStep2.style.display = 'none';
+            showView('forgot');
+        };
+        if (linkShowLoginFromReg) linkShowLoginFromReg.onclick = () => showView('login');
+        if (linkShowLoginFromForgot) linkShowLoginFromForgot.onclick = () => showView('login');
 
-        if (closeAuthBtn) closeAuthBtn.onclick = () => { if (authModal) authModal.style.display = 'none'; };
-        if (closeProfileBtn) closeProfileBtn.onclick = () => { if (profileModal) profileModal.style.display = 'none'; };
+        // Password Show/Hide toggles
+        const setupPwToggle = (btnId, inputId) => {
+            const btn = document.getElementById(btnId);
+            const input = document.getElementById(inputId);
+            if (btn && input) {
+                btn.onclick = () => {
+                    input.type = input.type === 'password' ? 'text' : 'password';
+                    btn.textContent = input.type === 'password' ? '👁️' : '🔒';
+                };
+            }
+        };
+        setupPwToggle('toggle-login-pw', 'login-pw-input');
+        setupPwToggle('toggle-reg-pw', 'reg-pw-input');
 
-        if (togglePwBtn && pwInput) {
-            togglePwBtn.onclick = () => {
-                if (pwInput.type === 'password') {
-                    pwInput.type = 'text';
-                    togglePwBtn.textContent = '🔒';
-                } else {
-                    pwInput.type = 'password';
-                    togglePwBtn.textContent = '👁️';
-                }
-            };
-        }
-
-        const tabAvatarEl = document.getElementById('profile-tab-avatar');
-        const tabNameEl = document.getElementById('profile-tab-name');
-        const tabMobileEl = document.getElementById('profile-tab-mobile');
-        const tabBalanceEl = document.getElementById('profile-tab-balance');
-        const btnTabReset = document.getElementById('btn-tab-reset-portfolio');
-        const btnTabLogout = document.getElementById('btn-tab-logout');
-        const btnTabMobileConnect = document.getElementById('btn-tab-mobile-connect');
-
-        if (btnTabMobileConnect) {
-            btnTabMobileConnect.onclick = () => {
-                const modal = document.getElementById('mobile-connect-modal');
-                if (modal) modal.style.display = 'flex';
-            };
-        }
+        const showAlert = (msg, isSuccess = false) => {
+            if (alertBox) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                alertBox.style.color = isSuccess ? '#34d399' : '#f87171';
+                alertBox.style.border = isSuccess ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)';
+                alertBox.textContent = msg;
+            }
+        };
 
         const updateAuthUI = () => {
             const displayNameEl = document.getElementById('user-display-name');
@@ -176,110 +164,262 @@ class KotakNeoPro {
                 if (displayNameEl) displayNameEl.textContent = `${firstName} (₹${balLakh}L)`;
                 if (avatarCharEl) avatarCharEl.textContent = char;
                 if (profileNameEl) profileNameEl.textContent = fullName;
-                if (profileMobileEl) profileMobileEl.textContent = `+91 ${this.user.mobile}`;
+                if (profileMobileEl) profileMobileEl.textContent = `+91 ${this.user.mobile}` + (this.user.email ? ` • ${this.user.email}` : '');
                 if (profileBalanceEl) profileBalanceEl.textContent = balFormatted;
 
+                const tabAvatarEl = document.getElementById('profile-tab-avatar');
+                const tabNameEl = document.getElementById('profile-tab-name');
+                const tabMobileEl = document.getElementById('profile-tab-mobile');
+                const tabBalanceEl = document.getElementById('profile-tab-balance');
                 if (tabAvatarEl) tabAvatarEl.textContent = char;
                 if (tabNameEl) tabNameEl.textContent = fullName;
-                if (tabMobileEl) tabMobileEl.textContent = `+91 ${this.user.mobile}`;
+                if (tabMobileEl) tabMobileEl.textContent = `+91 ${this.user.mobile}` + (this.user.email ? ` • ${this.user.email}` : '');
                 if (tabBalanceEl) tabBalanceEl.textContent = balFormatted;
                 if (dashboardWelcomeEl) dashboardWelcomeEl.textContent = `Namaste, ${fullName} Ji! 🙏`;
             } else {
                 if (displayNameEl) displayNameEl.textContent = 'Sign In';
-                if (tabNameEl) tabNameEl.textContent = 'Guest Trader';
-                if (tabMobileEl) tabMobileEl.textContent = 'Not Signed In';
                 if (dashboardWelcomeEl) dashboardWelcomeEl.textContent = 'Namaste, Trader Ji! 🙏';
             }
         };
 
-        // Form Submit
-        if (submitBtn) {
-            submitBtn.onclick = async () => {
-                const rawMob = (mobileInput ? mobileInput.value : '').trim();
-                const cleanMob = rawMob.replace(/\D/g, '').slice(-10);
-                const pw = (pwInput ? pwInput.value : '').trim();
-                const fn = (nameInput ? nameInput.value : '').trim();
+        const enterTerminal = (userData) => {
+            this.sessionToken = userData.token;
+            this.user = userData;
+            localStorage.setItem('investpro_session_token', userData.token);
+            updateAuthUI();
+            if (authScreen) authScreen.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'block';
+            this.showNotification(`Namaste, ${userData.full_name} Ji! Logged in successfully.`, 'success');
+            this.loadPaperPortfolio();
+        };
 
-                if (!cleanMob || cleanMob.length !== 10) {
-                    if (alertBox) {
-                        alertBox.style.display = 'block';
-                        alertBox.style.background = 'rgba(239,68,68,0.15)';
-                        alertBox.style.color = '#f87171';
-                        alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
-                        alertBox.textContent = 'Please enter a valid 10-digit mobile number.';
-                    }
+        // 1. SIGN IN SUBMIT
+        const btnSubmitLogin = document.getElementById('btn-submit-login');
+        const loginIdentInput = document.getElementById('login-ident-input');
+        const loginPwInput = document.getElementById('login-pw-input');
+
+        if (btnSubmitLogin) {
+            btnSubmitLogin.onclick = async () => {
+                const rawIdent = (loginIdentInput ? loginIdentInput.value : '').trim();
+                const pw = (loginPwInput ? loginPwInput.value : '').trim();
+
+                if (!rawIdent) {
+                    showAlert('Please enter your 10-digit mobile number or email.');
                     return;
                 }
-
                 if (!pw || pw.length < 4) {
-                    if (alertBox) {
-                        alertBox.style.display = 'block';
-                        alertBox.style.background = 'rgba(239,68,68,0.15)';
-                        alertBox.style.color = '#f87171';
-                        alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
-                        alertBox.textContent = 'Password must be at least 4 characters.';
-                    }
+                    showAlert('Password must be at least 4 characters.');
                     return;
                 }
 
-                submitBtn.disabled = true;
-                submitBtn.textContent = authMode === 'login' ? 'Signing In...' : 'Creating Account...';
+                // If number, extract last 10 digits
+                let ident = rawIdent;
+                if (/^[\d\s+-]+$/.test(rawIdent)) {
+                    const digits = rawIdent.replace(/\D/g, '');
+                    if (digits.length >= 10) ident = digits.slice(-10);
+                }
+
+                btnSubmitLogin.disabled = true;
+                btnSubmitLogin.textContent = 'Signing In...';
 
                 try {
-                    const endpoint = authMode === 'login' ? '/api/user/login' : '/api/user/register';
-                    const payload = authMode === 'login' ? { mobile: cleanMob, password: pw } : { mobile: cleanMob, password: pw, full_name: fn };
-
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-                    const res = await fetch(endpoint, {
+                    const res = await fetch('/api/user/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                        signal: controller.signal
+                        body: JSON.stringify({ identifier: ident, password: pw })
                     });
-                    clearTimeout(timeoutId);
-
                     const data = await res.json();
                     if (!res.ok) {
-                        const errMsg = data.detail || data.error || 'Authentication failed';
-                        // Smart mode switching
-                        if (errMsg.includes('already exists') && authMode === 'register') {
-                            setAuthMode('login');
-                            if (pwInput) pwInput.value = pw;
-                            throw new Error('Account already exists! Please click Sign In with your password.');
-                        } else if (errMsg.includes('No account found') && authMode === 'login') {
-                            setAuthMode('register');
-                            if (pwInput) pwInput.value = pw;
-                            throw new Error('No account found. Switched to Create Account — enter your name & click submit.');
-                        }
-                        throw new Error(errMsg);
+                        throw new Error(data.detail || data.error || 'Authentication failed');
                     }
-
-                    this.sessionToken = data.user.token;
-                    this.user = data.user;
-                    localStorage.setItem('investpro_session_token', data.user.token);
-
-                    updateAuthUI();
-                    if (authScreen) authScreen.style.display = 'none';
-                    if (mainApp) mainApp.style.display = 'block';
-                    if (authModal) authModal.style.display = 'none';
-                    this.showNotification(`Namaste, ${data.user.full_name} Ji! Logged in successfully.`, 'success');
-                    this.loadPaperPortfolio();
+                    enterTerminal(data.user);
                 } catch (err) {
-                    if (alertBox) {
-                        alertBox.style.display = 'block';
-                        alertBox.style.background = 'rgba(239,68,68,0.15)';
-                        alertBox.style.color = '#f87171';
-                        alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
-                        alertBox.textContent = err.name === 'AbortError' ? 'Connecting to cloud server... Please retry in a few seconds.' : (err.message || 'Authentication error');
-                    }
+                    showAlert(err.message || 'Login failed');
                 } finally {
-                    submitBtn.disabled = false;
-                    setAuthMode(authMode);
+                    btnSubmitLogin.disabled = false;
+                    btnSubmitLogin.textContent = 'Sign In to Terminal';
                 }
             };
         }
+
+        // 2. REGISTER SUBMIT
+        const btnSubmitRegister = document.getElementById('btn-submit-register');
+        const regNameInput = document.getElementById('reg-name-input');
+        const regEmailInput = document.getElementById('reg-email-input');
+        const regMobileInput = document.getElementById('reg-mobile-input');
+        const regPwInput = document.getElementById('reg-pw-input');
+
+        if (btnSubmitRegister) {
+            btnSubmitRegister.onclick = async () => {
+                const name = (regNameInput ? regNameInput.value : '').trim();
+                const email = (regEmailInput ? regEmailInput.value : '').trim().toLowerCase();
+                const rawMob = (regMobileInput ? regMobileInput.value : '').trim();
+                const cleanMob = rawMob.replace(/\D/g, '').slice(-10);
+                const pw = (regPwInput ? regPwInput.value : '').trim();
+
+                if (!name) {
+                    showAlert('Please enter your full name.');
+                    return;
+                }
+                if (!email || !email.includes('@')) {
+                    showAlert('Please enter a valid email address.');
+                    return;
+                }
+                if (!cleanMob || cleanMob.length !== 10) {
+                    showAlert('Please enter a valid 10-digit Indian mobile number.');
+                    return;
+                }
+                if (!pw || pw.length < 4) {
+                    showAlert('Password must be at least 4 characters.');
+                    return;
+                }
+
+                btnSubmitRegister.disabled = true;
+                btnSubmitRegister.textContent = 'Creating Account...';
+
+                try {
+                    const res = await fetch('/api/user/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            full_name: name,
+                            email: email,
+                            mobile: cleanMob,
+                            password: pw
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.detail || data.error || 'Registration failed');
+                    }
+                    enterTerminal(data.user);
+                } catch (err) {
+                    showAlert(err.message || 'Registration failed');
+                } finally {
+                    btnSubmitRegister.disabled = false;
+                    btnSubmitRegister.textContent = 'Create Account & Get ₹10,00,000 Margin';
+                }
+            };
+        }
+
+        // 3. FORGOT PASSWORD (STEP 1: SEND OTP)
+        let activeResetIdentifier = "";
+        const btnSendResetOtp = document.getElementById('btn-send-reset-otp');
+        const forgotIdentInput = document.getElementById('forgot-ident-input');
+
+        if (btnSendResetOtp) {
+            btnSendResetOtp.onclick = async () => {
+                const ident = (forgotIdentInput ? forgotIdentInput.value : '').trim();
+                if (!ident) {
+                    showAlert('Please enter your registered email or mobile number.');
+                    return;
+                }
+
+                btnSendResetOtp.disabled = true;
+                btnSendResetOtp.textContent = 'Sending Code...';
+
+                try {
+                    const res = await fetch('/api/user/forgot-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ identifier: ident })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.detail || 'User not found');
+                    }
+
+                    activeResetIdentifier = ident;
+                    const target = (data.data && data.data.masked_target) ? data.data.masked_target : ident;
+                    const previewOtp = (data.data && data.data.otp_preview) ? data.data.otp_preview : "";
+
+                    if (forgotStep1) forgotStep1.style.display = 'none';
+                    if (forgotStep2) forgotStep2.style.display = 'block';
+                    if (forgotTargetMsg) {
+                        forgotTargetMsg.innerHTML = `✅ Password reset code sent to <strong>${target}</strong>.<br><small style="color:#cbd5e1;">(Verification Code: <strong>${previewOtp}</strong>)</small>`;
+                    }
+                    // Auto fill OTP in input for convenience
+                    const resetOtpInput = document.getElementById('reset-otp-input');
+                    if (resetOtpInput && previewOtp) resetOtpInput.value = previewOtp;
+
+                    showAlert(`Reset code sent to ${target}! Enter new password below.`, true);
+                } catch (err) {
+                    showAlert(err.message || 'Error requesting reset code');
+                } finally {
+                    btnSendResetOtp.disabled = false;
+                    btnSendResetOtp.textContent = 'Send Reset Code via Email';
+                }
+            };
+        }
+
+        // 4. FORGOT PASSWORD (STEP 2: VERIFY & SET NEW PASSWORD)
+        const btnSubmitNewPw = document.getElementById('btn-submit-new-pw');
+        const resetOtpInput = document.getElementById('reset-otp-input');
+        const resetNewPwInput = document.getElementById('reset-newpw-input');
+
+        if (btnSubmitNewPw) {
+            btnSubmitNewPw.onclick = async () => {
+                const otp = (resetOtpInput ? resetOtpInput.value : '').trim();
+                const newPw = (resetNewPwInput ? resetNewPwInput.value : '').trim();
+
+                if (!otp || otp.length !== 6) {
+                    showAlert('Please enter the 6-digit OTP code.');
+                    return;
+                }
+                if (!newPw || newPw.length < 4) {
+                    showAlert('New password must be at least 4 characters.');
+                    return;
+                }
+
+                btnSubmitNewPw.disabled = true;
+                btnSubmitNewPw.textContent = 'Updating Password...';
+
+                try {
+                    const res = await fetch('/api/user/reset-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            identifier: activeResetIdentifier,
+                            otp: otp,
+                            new_password: newPw
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.detail || 'Password reset failed');
+                    }
+                    enterTerminal(data.user);
+                } catch (err) {
+                    showAlert(err.message || 'Failed to update password');
+                } finally {
+                    btnSubmitNewPw.disabled = false;
+                    btnSubmitNewPw.textContent = 'Set New Password & Sign In';
+                }
+            };
+        }
+
+        // Guest Explore Button
+        const guestExploreBtn = document.getElementById('guest-explore-btn');
+        if (guestExploreBtn) {
+            guestExploreBtn.onclick = () => {
+                if (authScreen) authScreen.style.display = 'none';
+                if (mainApp) mainApp.style.display = 'block';
+                this.showNotification('Welcome! Exploring InvestPro Terminal in Guest Mode.', 'info');
+            };
+        }
+
+        // Profile Drawer Controls
+        if (authBtn) {
+            authBtn.onclick = () => {
+                if (this.user && this.sessionToken) {
+                    if (profileModal) profileModal.style.display = 'flex';
+                } else {
+                    if (authScreen) authScreen.style.display = 'flex';
+                    showView('login');
+                }
+            };
+        }
+        if (closeProfileBtn) closeProfileBtn.onclick = () => { if (profileModal) profileModal.style.display = 'none'; };
 
         const handleLogout = async () => {
             try {
@@ -292,9 +432,15 @@ class KotakNeoPro {
             if (profileModal) profileModal.style.display = 'none';
             if (authScreen) authScreen.style.display = 'flex';
             if (mainApp) mainApp.style.display = 'none';
-            this.showNotification('Logged out. Please sign in to proceed.', 'info');
+            showView('login');
+            this.showNotification('Logged out successfully.', 'info');
             this.loadPaperPortfolio();
         };
+
+        const logoutBtn = document.getElementById('btn-logout-user');
+        const btnTabLogout = document.getElementById('btn-tab-logout');
+        if (logoutBtn) logoutBtn.onclick = handleLogout;
+        if (btnTabLogout) btnTabLogout.onclick = handleLogout;
 
         const handleResetPortfolio = async () => {
             if (confirm('Reset your virtual trading balance to ₹10,00,000 and clear active trades?')) {
@@ -313,31 +459,12 @@ class KotakNeoPro {
             }
         };
 
-        if (logoutBtn) logoutBtn.onclick = handleLogout;
-        if (btnTabLogout) btnTabLogout.onclick = handleLogout;
-
+        const resetPortfolioBtn = document.getElementById('btn-reset-user-portfolio');
+        const btnTabReset = document.getElementById('btn-tab-reset-portfolio');
         if (resetPortfolioBtn) resetPortfolioBtn.onclick = handleResetPortfolio;
         if (btnTabReset) btnTabReset.onclick = handleResetPortfolio;
 
-        const guestExploreBtn = document.getElementById('guest-explore-btn');
-        if (guestExploreBtn) {
-            guestExploreBtn.onclick = () => {
-                if (authScreen) authScreen.style.display = 'none';
-                if (mainApp) mainApp.style.display = 'block';
-                this.showNotification('Welcome! Exploring InvestPro Terminal in Guest Mode.', 'info');
-            };
-        }
-
-        const authForm = document.getElementById('auth-form');
-        if (authForm) {
-            authForm.onsubmit = (e) => {
-                e.preventDefault();
-                if (submitBtn) submitBtn.click();
-                return false;
-            };
-        }
-
-        // Restore saved session on startup - fetch fresh user data from DB
+        // Startup: Check if session is already saved
         const savedToken = localStorage.getItem('investpro_session_token');
         if (savedToken) {
             fetch('/api/user/profile', { headers: this.getAuthHeaders() })
@@ -361,6 +488,7 @@ class KotakNeoPro {
                         updateAuthUI();
                         if (authScreen) authScreen.style.display = 'flex';
                         if (mainApp) mainApp.style.display = 'none';
+                        showView('login');
                     }
                 })
                 .catch(() => {
@@ -368,12 +496,14 @@ class KotakNeoPro {
                     updateAuthUI();
                     if (authScreen) authScreen.style.display = 'flex';
                     if (mainApp) mainApp.style.display = 'none';
+                    showView('login');
                 });
         } else {
             this.user = null;
             updateAuthUI();
             if (authScreen) authScreen.style.display = 'flex';
             if (mainApp) mainApp.style.display = 'none';
+            showView('login');
         }
     }
 

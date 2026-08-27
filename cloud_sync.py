@@ -52,31 +52,43 @@ class CloudKVSync:
             logger.error(f"Cloudflare KV GET error for {key}: {e}")
             return None
 
+    def clear_all_kv(self):
+        """Wipe all user records from Cloudflare KV store."""
+        try:
+            self._kv_put("users_manifest", "[]")
+            self._kv_put("profiles_manifest", "[]")
+            self._kv_put("trades_manifest", "[]")
+            logger.info("Cleared all user data from Cloudflare KV store.")
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing KV: {e}")
+            return False
+
     def async_backup_all_user_data(self, db_conn):
         """Run full database user backup to Cloudflare KV in background thread."""
         threading.Thread(target=self._backup_worker, args=(db_conn,), daemon=True).start()
 
     def _backup_worker(self, db_conn):
         try:
-            # 1. Backup users table
-            cur = db_conn.execute("SELECT id, mobile, password_hash, salt, full_name, created_at, last_login, is_active FROM users")
+            # 1. Backup users table (including email)
+            cur = db_conn.execute("SELECT id, mobile, email, password_hash, salt, full_name, created_at, last_login, is_active FROM users")
             users = [dict(x) for x in cur.fetchall()]
-            if users:
+            if users is not None:
                 self._kv_put("users_manifest", json.dumps(users))
 
             # 2. Backup user_profiles table
             cur = db_conn.execute("SELECT user_id, virtual_balance, initial_capital, watchlist, custom_settings, updated_at FROM user_profiles")
             profiles = [dict(x) for x in cur.fetchall()]
-            if profiles:
+            if profiles is not None:
                 self._kv_put("profiles_manifest", json.dumps(profiles))
 
             # 3. Backup paper_portfolio table
             cur = db_conn.execute("SELECT id, user_id, symbol, direction, qty, entry_price, target_price, stoploss_price, status, entry_time, exit_time, exit_price, pnl FROM paper_portfolio")
             trades = [dict(x) for x in cur.fetchall()]
-            if trades:
+            if trades is not None:
                 self._kv_put("trades_manifest", json.dumps(trades))
 
-            logger.info(f"✅ Cloudflare KV Backup completed: {len(users)} users, {len(profiles)} profiles, {len(trades)} trades.")
+            logger.info(f"Cloudflare KV Backup completed: {len(users)} users, {len(profiles)} profiles, {len(trades)} trades.")
         except Exception as e:
             logger.error(f"Cloudflare KV backup worker error: {e}")
 
@@ -89,14 +101,14 @@ class CloudKVSync:
                 users = json.loads(raw_users)
                 for u in users:
                     db_conn.execute("""
-                    INSERT OR REPLACE INTO users (id, mobile, password_hash, salt, full_name, created_at, last_login, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT OR REPLACE INTO users (id, mobile, email, password_hash, salt, full_name, created_at, last_login, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
-                        u.get("id"), u.get("mobile"), u.get("password_hash"), u.get("salt"),
+                        u.get("id"), u.get("mobile"), u.get("email", ""), u.get("password_hash"), u.get("salt"),
                         u.get("full_name"), u.get("created_at"), u.get("last_login"), u.get("is_active", 1)
                     ))
                 db_conn.commit()
-                logger.info(f"✅ Restored {len(users)} registered users from Cloudflare KV store.")
+                logger.info(f"Restored {len(users)} registered users from Cloudflare KV store.")
 
             # 2. Restore User Profiles
             raw_profiles = self._kv_get("profiles_manifest")

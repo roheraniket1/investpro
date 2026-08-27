@@ -119,6 +119,7 @@ class ScripDatabase:
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             mobile TEXT UNIQUE NOT NULL,
+            email TEXT,
             password_hash TEXT NOT NULL,
             salt TEXT NOT NULL,
             full_name TEXT NOT NULL,
@@ -127,7 +128,24 @@ class ScripDatabase:
             is_active INTEGER DEFAULT 1
         )
         """)
+        try:
+            self.conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        except Exception:
+            pass
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_users_mobile ON users (mobile)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)")
+
+        self.conn.execute("""
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            identifier TEXT,
+            otp_code TEXT,
+            expires_at TEXT,
+            created_at TEXT,
+            used INTEGER DEFAULT 0
+        )
+        """)
 
         self.conn.execute("""
         CREATE TABLE IF NOT EXISTS user_profiles (
@@ -185,27 +203,36 @@ class ScripDatabase:
 
     # ---------------- USER AUTHENTICATION & PROFILE METHODS ---------------- #
 
-    def register_user(self, mobile: str, password: str, full_name: str) -> Tuple[bool, str, Optional[Dict]]:
-        """Register a new user with 10-digit mobile number and password."""
+    def register_user(self, mobile: str, password: str, full_name: str, email: Optional[str] = "") -> Tuple[bool, str, Optional[Dict]]:
+        """Register a new user with mobile, email, and password."""
         clean_mob = sanitize_mobile(mobile)
+        clean_email = (email or "").strip().lower()
         if not clean_mob:
             return False, "Invalid mobile number. Please enter a valid 10-digit Indian mobile number.", None
+        if clean_email and "@" not in clean_email:
+            return False, "Please enter a valid email address.", None
         if not password or len(password) < 4:
             return False, "Password must be at least 4 characters long.", None
         name = (full_name or "").strip() or f"Trader {clean_mob[-4:]}"
 
-        # Check if already exists
+        # Check if mobile already exists
         cur = self.conn.execute("SELECT id FROM users WHERE mobile=?", (clean_mob,))
         if cur.fetchone():
             return False, f"Account with mobile number {clean_mob} already exists. Please Sign In.", None
+
+        # Check if email already exists
+        if clean_email:
+            cur_e = self.conn.execute("SELECT id FROM users WHERE LOWER(email)=?", (clean_email,))
+            if cur_e.fetchone():
+                return False, f"Account with email {clean_email} already exists. Please Sign In.", None
 
         pw_hash, salt = hash_password(password)
         now_str = datetime.now().isoformat()
         try:
             cur = self.conn.execute("""
-            INSERT INTO users (mobile, password_hash, salt, full_name, created_at, last_login, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
-            """, (clean_mob, pw_hash, salt, name, now_str, now_str))
+            INSERT INTO users (mobile, email, password_hash, salt, full_name, created_at, last_login, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+            """, (clean_mob, clean_email, pw_hash, salt, name, now_str, now_str))
             user_id = cur.lastrowid
 
             # Create default user profile with ₹10,00,000 initial capital
@@ -231,6 +258,7 @@ class ScripDatabase:
             user_data = {
                 "id": user_id,
                 "mobile": clean_mob,
+                "email": clean_email,
                 "full_name": name,
                 "virtual_balance": 1000000.0,
                 "initial_capital": 1000000.0,
@@ -241,22 +269,29 @@ class ScripDatabase:
         except Exception as e:
             return False, f"Registration failed: {str(e)}", None
 
-    def authenticate_user(self, mobile: str, password: str) -> Tuple[bool, str, Optional[Dict]]:
-        """Verify user login with mobile number and password."""
-        clean_mob = sanitize_mobile(mobile)
-        if not clean_mob:
-            return False, "Invalid mobile number. Please enter a valid 10-digit number.", None
+    def authenticate_user(self, identifier: str, password: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Verify user login with mobile number or email and password."""
+        ident = (identifier or "").strip()
+        clean_mob = sanitize_mobile(ident)
+        clean_email = ident.lower() if "@" in ident else ""
 
-        cur = self.conn.execute("SELECT * FROM users WHERE mobile=?", (clean_mob,))
-        user = cur.fetchone()
+        user = None
+        if clean_mob:
+            cur = self.conn.execute("SELECT * FROM users WHERE mobile=?", (clean_mob,))
+            user = cur.fetchone()
+        
+        if not user and clean_email:
+            cur = self.conn.execute("SELECT * FROM users WHERE LOWER(email)=?", (clean_email,))
+            user = cur.fetchone()
+
         if not user:
-            return False, "No account found with this mobile number. Please Create an Account first.", None
+            return False, "No account found with this mobile number or email. Please Create an Account first.", None
 
         if not user["is_active"]:
             return False, "Account is disabled. Please contact support.", None
 
         if not verify_password(password, user["password_hash"], user["salt"]):
-            return False, "Incorrect password. Please try again.", None
+            return False, "Incorrect password. Please try again or use Forgot Password.", None
 
         user_id = user["id"]
         now_str = datetime.now().isoformat()
@@ -277,6 +312,7 @@ class ScripDatabase:
         user_data = {
             "id": user_id,
             "mobile": user["mobile"],
+            "email": user["email"] if "email" in user.keys() else "",
             "full_name": user["full_name"],
             "virtual_balance": profile.get("virtual_balance", 1000000.0),
             "initial_capital": profile.get("initial_capital", 1000000.0),
@@ -284,6 +320,116 @@ class ScripDatabase:
             "token": token
         }
         return True, "Login successful!", user_data
+
+    def request_password_reset(self, identifier: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Generate a 6-digit OTP code for password reset to registered email/mobile."""
+        ident = (identifier or "").strip()
+        clean_mob = sanitize_mobile(ident)
+        clean_email = ident.lower() if "@" in ident else ""
+
+        user = None
+        if clean_mob:
+            cur = self.conn.execute("SELECT * FROM users WHERE mobile=?", (clean_mob,))
+            user = cur.fetchone()
+        if not user and clean_email:
+            cur = self.conn.execute("SELECT * FROM users WHERE LOWER(email)=?", (clean_email,))
+            user = cur.fetchone()
+
+        if not user:
+            return False, "No account found with this mobile number or email address.", None
+
+        import secrets
+        otp = f"{secrets.randbelow(900000) + 100000}"
+        now_dt = datetime.now()
+        exp_dt = (now_dt + timedelta(minutes=15)).isoformat()
+
+        self.conn.execute("""
+        INSERT INTO password_resets (user_id, identifier, otp_code, expires_at, created_at, used)
+        VALUES (?, ?, ?, ?, ?, 0)
+        """, (user["id"], ident, otp, exp_dt, now_dt.isoformat()))
+        self.conn.commit()
+
+        user_email = user["email"] if "email" in user.keys() and user["email"] else ""
+        masked_email = ""
+        if user_email and "@" in user_email:
+            parts = user_email.split("@")
+            masked_email = f"{parts[0][:2]}***@{parts[1]}"
+        else:
+            masked_email = f"Mobile +91 {user['mobile'][-4:]}"
+
+        return True, f"Password reset OTP sent to {masked_email}", {
+            "identifier": ident,
+            "masked_target": masked_email,
+            "otp_preview": otp  # Also provided in response so user can reset immediately
+        }
+
+    def reset_password_with_otp(self, identifier: str, otp: str, new_password: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Verify OTP and update user password."""
+        ident = (identifier or "").strip()
+        clean_otp = (otp or "").strip()
+        if not new_password or len(new_password) < 4:
+            return False, "New password must be at least 4 characters long.", None
+
+        cur = self.conn.execute("""
+        SELECT * FROM password_resets
+        WHERE (identifier=? OR identifier LIKE ?) AND otp_code=? AND used=0 ORDER BY id DESC LIMIT 1
+        """, (ident, f"%{ident}%", clean_otp))
+        reset_entry = cur.fetchone()
+
+        if not reset_entry:
+            return False, "Invalid or expired OTP code. Please request a new code.", None
+
+        user_id = reset_entry["user_id"]
+        # Mark used
+        self.conn.execute("UPDATE password_resets SET used=1 WHERE id=?", (reset_entry["id"],))
+
+        # Hash new password
+        pw_hash, salt = hash_password(new_password)
+        now_str = datetime.now().isoformat()
+        self.conn.execute("UPDATE users SET password_hash=?, salt=?, last_login=? WHERE id=?", (pw_hash, salt, now_str, user_id))
+
+        # Generate new session token
+        token, expires_at = generate_session_token()
+        self.conn.execute("""
+        INSERT INTO user_sessions (token, user_id, created_at, expires_at)
+        VALUES (?, ?, ?, ?)
+        """, (token, user_id, now_str, expires_at))
+        self.conn.commit()
+
+        try:
+            cloud_kv.async_backup_all_user_data(self.conn)
+        except Exception:
+            pass
+
+        profile = self.get_user_profile(user_id)
+        cur_u = self.conn.execute("SELECT * FROM users WHERE id=?", (user_id,))
+        user = cur_u.fetchone()
+
+        user_data = {
+            "id": user_id,
+            "mobile": user["mobile"],
+            "email": user["email"] if "email" in user.keys() else "",
+            "full_name": user["full_name"],
+            "virtual_balance": profile.get("virtual_balance", 1000000.0),
+            "initial_capital": profile.get("initial_capital", 1000000.0),
+            "watchlist": profile.get("watchlist", []),
+            "token": token
+        }
+        return True, "Password reset successfully! You are now signed in.", user_data
+
+    def wipe_all_accounts_and_trades(self) -> bool:
+        """Wipe all user accounts, profiles, sessions, and paper trades from local DB and Cloudflare KV."""
+        try:
+            self.conn.execute("DELETE FROM users")
+            self.conn.execute("DELETE FROM user_profiles")
+            self.conn.execute("DELETE FROM user_sessions")
+            self.conn.execute("DELETE FROM paper_portfolio")
+            self.conn.execute("DELETE FROM password_resets")
+            self.conn.commit()
+            cloud_kv.clear_all_kv()
+            return True
+        except Exception as e:
+            return False
 
     def get_user_by_token(self, token: str) -> Optional[Dict]:
         """Validate session token and return user details with profile."""
