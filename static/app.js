@@ -556,27 +556,129 @@ class KotakNeoPro {
                 }
             }, 15000);
         }
+
+        // Live Market Price Polling Streamer (continuous real-time sync for Mobile & Desktop)
+        if (!this.quoteSyncInterval) {
+            this.quoteSyncInterval = setInterval(async () => {
+                try {
+                    const symsToPoll = new Set(['NIFTY 50', 'BANK NIFTY', 'NIFTY IT', 'SENSEX']);
+                    if (this.activeSymbol) symsToPoll.add(this.activeSymbol);
+                    if (this.user && this.user.watchlist && Array.isArray(this.user.watchlist)) {
+                        this.user.watchlist.forEach(s => symsToPoll.add(s));
+                    }
+                    const res = await fetch(`/api/market/quotes?symbols=${encodeURIComponent(Array.from(symsToPoll).join(','))}`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.quotes) {
+                            this.updateLivePrices(json.quotes);
+                        }
+                    }
+                } catch(e) {}
+            }, 2000);
+        }
     }
 
     updateLivePrices(data) {
+        if (!data || typeof data !== 'object') return;
+
         const formatChg = (val) => {
-            const v = parseFloat(val).toFixed(2);
+            const v = parseFloat(val || 0).toFixed(2);
             return v > 0 ? `+${v}%` : `${v}%`;
         };
+
+        // 1. Overview Top Market Indices
         const updateCard = (id, symbol) => {
             const card = document.getElementById(id);
-            if (card && data[symbol]) {
-                card.querySelector('.price').textContent = this.formatNumber(data[symbol].ltp.toFixed(2));
+            const item = data[symbol] || data[symbol.replace(' ', '')];
+            if (card && item) {
+                const ltp = typeof item === 'object' ? item.ltp : Number(item);
+                const chg = typeof item === 'object' ? item.chg : 0;
+                const priceEl = card.querySelector('.price');
+                if (priceEl && ltp) priceEl.textContent = this.formatNumber(Number(ltp).toFixed(2));
                 const chgEl = card.querySelector('.change');
-                chgEl.textContent = formatChg(data[symbol].chg);
-                chgEl.className = `change ${data[symbol].chg >= 0 ? 'up' : 'down'}`;
+                if (chgEl) {
+                    chgEl.textContent = formatChg(chg);
+                    chgEl.className = `change ${chg >= 0 ? 'up' : 'down'}`;
+                }
             }
         };
         updateCard('idx-nifty', 'NIFTY 50');
         updateCard('idx-banknifty', 'BANK NIFTY');
         updateCard('idx-niftyit', 'NIFTY IT');
+        updateCard('idx-sensex', 'SENSEX');
 
-        // Dynamically update paper trading open position LTP and P&L in real-time
+        // 2. Active Stock Analyzer Header & Dynamic Candlestick Movement
+        if (this.activeSymbol) {
+            const sym = this.activeSymbol;
+            const tick = data[sym] || data[sym.replace('.NS', '')] || data[sym + '.NS'];
+            if (tick) {
+                const newLtp = typeof tick === 'object' ? tick.ltp : Number(tick);
+                const newChg = typeof tick === 'object' ? tick.chg : 0;
+                
+                // Header LTP with real-time green/red tick flash
+                const ltpEl = document.getElementById('analyzer-instrument-ltp');
+                if (ltpEl && newLtp > 0) {
+                    const oldPrice = parseFloat(ltpEl.textContent.replace(/[^0-9.]/g, '')) || newLtp;
+                    ltpEl.textContent = `₹${Number(newLtp).toFixed(2)}`;
+                    ltpEl.style.transition = 'color 0.2s ease, transform 0.2s ease';
+                    if (newLtp > oldPrice) {
+                        ltpEl.style.color = 'var(--bullish-green)';
+                    } else if (newLtp < oldPrice) {
+                        ltpEl.style.color = 'var(--bearish-red)';
+                    }
+                }
+
+                // Dynamic Candlestick Formation on Chart
+                if (this.activeCandleSeries && this.lastCandle && newLtp > 0) {
+                    const high = Math.max(Number(this.lastCandle.high || newLtp), Number(newLtp));
+                    const low = Math.min(Number(this.lastCandle.low || newLtp), Number(newLtp));
+                    this.lastCandle.close = Number(newLtp);
+                    this.lastCandle.high = high;
+                    this.lastCandle.low = low;
+
+                    try {
+                        this.activeCandleSeries.update({
+                            time: this.lastCandle.time,
+                            open: Number(this.lastCandle.open),
+                            high: high,
+                            low: low,
+                            close: Number(newLtp)
+                        });
+                    } catch(e) {}
+
+                    // Live Kotak Price Legend update
+                    const priceLegend = document.getElementById('kotak-price-legend');
+                    if (priceLegend) {
+                        const volText = this.lastCandle.volume ? `${(this.lastCandle.volume / 1000000).toFixed(2)}M` : '--';
+                        priceLegend.innerHTML = `<strong>${sym}</strong> - ${(this.activeTf || '1D').toUpperCase()} - NSE | O: ${this.lastCandle.open} H: ${high} L: ${low} C: ${newLtp} Vol: ${volText}`;
+                    }
+                }
+            }
+        }
+
+        // 3. Watchlist Live Prices everywhere
+        const wlRows = document.querySelectorAll('.wl-row');
+        if (wlRows && wlRows.length > 0) {
+            wlRows.forEach(row => {
+                const sym = row.dataset.symbol;
+                if (sym) {
+                    const item = data[sym] || data[sym.replace('.NS', '')];
+                    if (item) {
+                        const ltp = typeof item === 'object' ? item.ltp : Number(item);
+                        const chg = typeof item === 'object' ? item.chg : 0;
+                        const ltpCell = row.querySelector('.wl-ltp');
+                        const chgCell = row.querySelector('.wl-chg');
+                        if (ltpCell && ltp) ltpCell.textContent = `₹${this.formatNumber(Number(ltp).toFixed(2))}`;
+                        if (chgCell) {
+                            chgCell.textContent = formatChg(chg);
+                            chgCell.style.color = chg >= 0 ? 'var(--bullish-green)' : 'var(--bearish-red)';
+                        }
+                    }
+                }
+            });
+        }
+
+        // 4. Dynamically update paper trading open position LTP and P&L in real-time
         const activeTbody = document.getElementById('paper-active-positions');
         if (activeTbody) {
             const rows = activeTbody.querySelectorAll('tr');
@@ -585,13 +687,14 @@ class KotakNeoPro {
                 if (symbolCell && row.cells.length >= 8) {
                     const symbol = symbolCell.textContent.trim();
                     const cleanSymbol = symbol.split('-')[0].trim();
-                    if (data[cleanSymbol]) {
-                        const newLtp = data[cleanSymbol].ltp;
-                        row.cells[4].textContent = `₹${newLtp.toFixed(2)}`;
+                    const item = data[cleanSymbol] || data[symbol];
+                    if (item) {
+                        const newLtp = typeof item === 'object' ? item.ltp : Number(item);
+                        row.cells[4].textContent = `₹${this.formatNumber(Number(newLtp).toFixed(2))}`;
                         
                         const direction = row.cells[1].textContent.trim();
                         const qty = parseInt(row.cells[2].textContent.trim()) || 0;
-                        const entry = parseFloat(row.cells[3].textContent.replace('₹', '')) || 0;
+                        const entry = parseFloat(row.cells[3].textContent.replace(/[^0-9.]/g, '')) || 0;
                         
                         let pnl = 0;
                         if (direction === 'BUY') {
@@ -601,8 +704,27 @@ class KotakNeoPro {
                         }
                         
                         const pnlCell = row.cells[7];
-                        pnlCell.textContent = `₹${(pnl >= 0 ? '+' : '')}${pnl.toFixed(2)}`;
+                        pnlCell.textContent = `₹${(pnl >= 0 ? '+' : '')}${this.formatNumber(Number(pnl).toFixed(2))}`;
                         pnlCell.style.color = pnl >= 0 ? 'var(--bullish-green)' : 'var(--bearish-red)';
+                    }
+                }
+            });
+        }
+
+        // 5. Signals Cards Real-Time LTP Badges
+        const sigCards = document.querySelectorAll('.sig-card');
+        if (sigCards && sigCards.length > 0) {
+            sigCards.forEach(card => {
+                const symEl = card.querySelector('.sig-sym');
+                if (symEl) {
+                    const sym = symEl.textContent.trim().split('-')[0].trim();
+                    const tick = data[sym];
+                    if (tick) {
+                        const newLtp = typeof tick === 'object' ? tick.ltp : Number(tick);
+                        const ltpTag = card.querySelector('.sig-ltp-badge');
+                        if (ltpTag && newLtp > 0) {
+                            ltpTag.textContent = `₹${this.formatNumber(Number(newLtp).toFixed(2))}`;
+                        }
                     }
                 }
             });
@@ -2006,6 +2128,12 @@ class KotakNeoPro {
                 });
                 candlestickSeries.setData(data.candles);
                 
+                // Store active references for dynamic real-time price tick movement
+                self.activeSymbol = cleanSym;
+                self.activeTf = tf;
+                self.activeCandleSeries = candlestickSeries;
+                self.lastCandle = (data.candles && data.candles.length > 0) ? { ...data.candles[data.candles.length - 1] } : null;
+                
                 // Price Volume
                 const volumeSeries = priceChart.addHistogramSeries({
                     priceFormat: { type: 'volume' },
@@ -2504,6 +2632,8 @@ class KotakNeoPro {
             
             const compName = d.name || d.company_name || '';
             const tr = document.createElement('tr');
+            tr.className = 'wl-row';
+            tr.dataset.symbol = d.symbol;
             tr.innerHTML = `
                 <td style="font-weight:600; text-align: left; font-size: 13px;">
                     <div style="display:flex; flex-direction:column; gap:2px;">
@@ -2511,8 +2641,8 @@ class KotakNeoPro {
                         ${compName && compName !== d.symbol ? `<span style="font-size:11px; color:#94a3b8; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${compName}</span>` : ''}
                     </div>
                 </td>
-                <td style="font-weight:600;">₹${this.formatNumber(Number(ltp).toFixed(2))}</td>
-                <td style="color:${chgColor}; font-weight:600;">${chg > 0 ? '+' + chg : chg}%</td>
+                <td class="wl-ltp" style="font-weight:600;">₹${this.formatNumber(Number(ltp).toFixed(2))}</td>
+                <td class="wl-chg" style="color:${chgColor}; font-weight:600;">${chg > 0 ? '+' + chg : chg}%</td>
                 <td>${d.volume || '--'}</td>
                 <td style="color: var(--bullish-green); font-weight:600;">
                     ₹${this.formatNumber(Number(target).toFixed(2))} <span style="font-size:11px; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px; margin-left:4px;">${profitPct}</span>

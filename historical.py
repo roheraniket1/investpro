@@ -330,21 +330,45 @@ _CIRCUIT_BREAKER = {
     'yahoo_available': False
 }
 
-def is_yahoo_available() -> bool:
-    now = time.time()
-    if now - _CIRCUIT_BREAKER['last_check'] < 300:
-        return _CIRCUIT_BREAKER['yahoo_available']
-    
-    _CIRCUIT_BREAKER['last_check'] = now
+
+def _fetch_yahoo_v8_candles(formatted_symbol: str, range_str: str = '1y', interval: str = '1d') -> Optional[pd.DataFrame]:
+    """Fetch high-precision real candles directly from Yahoo Finance v8 chart API."""
+    import urllib.request, json
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{formatted_symbol}?interval={interval}&range={range_str}"
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    req = urllib.request.Request(url, headers=headers)
     try:
-        ticker = yf.Ticker('^NSEI', session=yf_session)
-        df = ticker.history(period='2d', interval='1d')
-        available = (df is not None and not df.empty)
-        _CIRCUIT_BREAKER['yahoo_available'] = available
-        return available
+        with urllib.request.urlopen(req, timeout=3.5) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            result = data.get('chart', {}).get('result', [])
+            if not result:
+                return None
+            res0 = result[0]
+            timestamps = res0.get('timestamp', [])
+            quote = res0.get('indicators', {}).get('quote', [{}])[0]
+            opens = quote.get('open', [])
+            highs = quote.get('high', [])
+            lows = quote.get('low', [])
+            closes = quote.get('close', [])
+            volumes = quote.get('volume', [])
+            
+            rows = []
+            dates = []
+            for i, ts in enumerate(timestamps):
+                if i < len(opens) and opens[i] is not None and closes[i] is not None:
+                    o = round(float(opens[i]), 2)
+                    h = round(float(highs[i] if highs[i] is not None else max(opens[i], closes[i])), 2)
+                    l = round(float(lows[i] if lows[i] is not None else min(opens[i], closes[i])), 2)
+                    c = round(float(closes[i]), 2)
+                    v = int(volumes[i] if volumes[i] is not None else 0)
+                    dt = datetime.fromtimestamp(ts)
+                    dates.append(dt)
+                    rows.append({'Open': o, 'High': h, 'Low': l, 'Close': c, 'Volume': v})
+            if rows and len(rows) >= 5:
+                return pd.DataFrame(rows, index=pd.DatetimeIndex(dates))
     except Exception:
-        _CIRCUIT_BREAKER['yahoo_available'] = False
-        return False
+        pass
+    return None
 
 def get_historical(symbol: str, period: str = '1y', interval: str = '1d') -> pd.DataFrame:
     formatted_symbol = _format_symbol(symbol)
@@ -353,19 +377,27 @@ def get_historical(symbol: str, period: str = '1y', interval: str = '1d') -> pd.
     if cached_data is not None:
         return cached_data
 
-    if is_yahoo_available():
-        try:
-            ticker = yf.Ticker(formatted_symbol, session=yf_session)
-            df = ticker.history(period=period, interval=interval)
-            if not df.empty and len(df) >= 20:
-                cache.set(cache_key, df, 3600)
-                return df
-        except Exception:
-            pass
-        
-    # Resilient synthetic fallback
+    # 1. Primary: Direct Yahoo Finance v8 chart API (Super fast & 100% Real Live Candles)
+    range_map = {'1mo': '1mo', '3mo': '3mo', '6mo': '6mo', '1y': '1y', '2y': '2y', '5y': '5y'}
+    r_str = range_map.get(period, '1y')
+    df = _fetch_yahoo_v8_candles(formatted_symbol, range_str=r_str, interval=interval)
+    if df is not None and not df.empty and len(df) >= 10:
+        cache.set(cache_key, df, 120)  # 2 minute cache for live market freshness
+        return df
+
+    # 2. Secondary: yfinance package fallback
+    try:
+        ticker = yf.Ticker(formatted_symbol, session=yf_session)
+        df_yf = ticker.history(period=period, interval=interval)
+        if not df_yf.empty and len(df_yf) >= 10:
+            cache.set(cache_key, df_yf, 120)
+            return df_yf
+    except Exception:
+        pass
+
+    # 3. Resilient synthetic fallback
     df_synthetic = _generate_synthetic_candles(symbol, num_bars=120, interval=interval)
-    cache.set(cache_key, df_synthetic, 300)
+    cache.set(cache_key, df_synthetic, 60)
     return df_synthetic
 
 def get_intraday(symbol: str, period: str = '5d', interval: str = '5m') -> pd.DataFrame:
@@ -375,19 +407,26 @@ def get_intraday(symbol: str, period: str = '5d', interval: str = '5m') -> pd.Da
     if cached_data is not None:
         return cached_data
 
-    if is_yahoo_available():
-        try:
-            ticker = yf.Ticker(formatted_symbol, session=yf_session)
-            df = ticker.history(period=period, interval=interval)
-            if not df.empty and len(df) >= 20:
-                cache.set(cache_key, df, 300)
-                return df
-        except Exception:
-            pass
+    # 1. Primary: Direct Yahoo Finance v8 chart API
+    mapped_int = '5m' if '5' in interval else ('15m' if '15' in interval else ('60m' if ('60' in interval or '1h' in interval) else '5m'))
+    df = _fetch_yahoo_v8_candles(formatted_symbol, range_str='5d', interval=mapped_int)
+    if df is not None and not df.empty and len(df) >= 10:
+        cache.set(cache_key, df, 60)  # 1 minute cache for intraday freshness
+        return df
 
-    # Resilient synthetic fallback
+    # 2. Secondary: yfinance package fallback
+    try:
+        ticker = yf.Ticker(formatted_symbol, session=yf_session)
+        df_yf = ticker.history(period=period, interval=mapped_int)
+        if not df_yf.empty and len(df_yf) >= 10:
+            cache.set(cache_key, df_yf, 60)
+            return df_yf
+    except Exception:
+        pass
+
+    # 3. Resilient synthetic fallback
     df_synthetic = _generate_synthetic_candles(symbol, num_bars=80, interval=interval)
-    cache.set(cache_key, df_synthetic, 120)
+    cache.set(cache_key, df_synthetic, 60)
     return df_synthetic
 
 def get_multiple(symbols: List[str], period: str = '1y', interval: str = '1d') -> Dict[str, pd.DataFrame]:

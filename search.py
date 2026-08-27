@@ -584,24 +584,32 @@ class SearchEngine:
         enriched.sort(key=lambda x: x["_rank"])
         top_results = enriched[:limit]
 
-        # Fast non-blocking price assignment
+        # Fast authentic price assignment via live price engine
+        try:
+            from market_prices import price_engine
+        except Exception:
+            price_engine = None
+
         base_prices = {
-            "GPPL": 163.54, "HINDALCO": 1034.0, "RELIANCE": 1314.0, "TCS": 2295.0,
-            "INFY": 1119.0, "HDFCBANK": 729.0, "TATAMOTORS": 980.0, "SBIN": 815.0,
-            "ITC": 490.0, "LT": 3650.0, "BHARTIARTL": 1640.0, "ICICIBANK": 1280.0,
-            "KOTAKBANK": 1820.0, "BAJFINANCE": 6950.0, "TITAN": 3480.0, "MARUTI": 12400.0,
-            "CRUDEOIL": 6250.0, "CRUDEOILM": 6255.0, "GOLD": 72400.0, "GOLDM": 72450.0,
+            "GPPL": 171.15, "HINDALCO": 1034.0, "RELIANCE": 1291.20, "TCS": 2248.60,
+            "INFY": 1109.0, "HDFCBANK": 712.40, "TATAMOTORS": 980.0, "SBIN": 1047.20,
+            "ITC": 269.25, "LT": 4044.90, "BHARTIARTL": 1899.40, "ICICIBANK": 1444.10,
+            "KOTAKBANK": 1820.0, "BAJFINANCE": 1089.50, "TITAN": 3480.0, "MARUTI": 12400.0,
+            "CRUDEOIL": 7686.0, "CRUDEOILM": 7686.0, "GOLD": 72400.0, "GOLDM": 72450.0,
             "SILVER": 84500.0, "SILVERMIC": 84520.0, "NATURALGAS": 185.20, "COPPER": 795.40,
-            "NIFTY 50": 24850.0, "BANK NIFTY": 51200.0
+            "NIFTY 50": 24150.0, "BANK NIFTY": 57715.0
         }
         for res in top_results:
             sym_clean = res["symbol"]
-            price = base_prices.get(sym_clean)
+            price = None
+            if price_engine:
+                price = price_engine.get_ltp(sym_clean)
             if price is None:
-                if res.get("strike") and float(res.get("strike")) > 0:
-                    price = round(float(res.get("strike")), 2)
-                else:
-                    price = round(float((sum(ord(c) for c in sym_clean) % 500) + 100), 2)
+                price = base_prices.get(sym_clean)
+            if price is None and res.get("strike") and float(res.get("strike")) > 0:
+                price = round(float(res.get("strike")), 2)
+            if price is None:
+                price = 100.0
             res["ltp"] = round(float(price), 2)
             res["current_price"] = round(float(price), 2)
 

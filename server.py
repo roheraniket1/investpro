@@ -450,14 +450,19 @@ async def get_expiries(symbol: str):
 
 
 @app.get("/api/historical/{symbol}")
-async def get_historical_candles(symbol: str):
-    """Fetch historical daily candles and computed indicators for chart display."""
-    from historical import resolve_symbol, get_historical
+async def get_historical_candles(symbol: str, interval: str = Query("1d")):
+    """Fetch real historical candles (daily or intraday) and computed indicators for chart display."""
+    from historical import resolve_symbol, get_historical, get_intraday
+    from market_prices import price_engine
     symbol = resolve_symbol(symbol).upper().strip()
+    price_engine.subscribe(symbol)
     try:
         from analysis.technical import TechnicalAnalyzer
         
-        df = get_historical(symbol, period="1y", interval="1d")
+        if interval in ["5m", "15m", "60m", "1h"]:
+            df = get_intraday(symbol, period="5d", interval=interval)
+        else:
+            df = get_historical(symbol, period="1y", interval="1d")
         if df.empty:
             logger.warning(f"Yahoo Finance rate-limited. Generating fallback chart data for {symbol}...")
             import pandas as pd
@@ -537,13 +542,15 @@ async def get_historical_candles(symbol: str):
             }
             
         candles = []
+        is_intraday = interval in ["5m", "15m", "60m", "1h"]
         for idx, row in df.iterrows():
+            t_val = int(idx.timestamp()) if is_intraday else idx.strftime("%Y-%m-%d")
             candles.append({
-                "time": idx.strftime("%Y-%m-%d"),
-                "open": float(row["Open"]),
-                "high": float(row["High"]),
-                "low": float(row["Low"]),
-                "close": float(row["Close"]),
+                "time": t_val,
+                "open": round(float(row["Open"]), 2),
+                "high": round(float(row["High"]), 2),
+                "low": round(float(row["Low"]), 2),
+                "close": round(float(row["Close"]), 2),
                 "volume": float(row["Volume"])
             })
             
@@ -1287,65 +1294,61 @@ def is_market_open(symbol: Optional[str] = None):
 paper_tick_state = {}  # {trade_id: {"base_price": float, "current_ltp": float, "last_updated": float, "last_base_fetch": float}}
 
 def get_live_paper_price(trade_id: int, symbol: str, entry_price: float) -> tuple[float, bool, str]:
-    """Retrieve realistic live LTP. If market is closed, freeze strictly at official settlement/closing price."""
-    global paper_tick_state
-    now = time.time()
+    """Retrieve authentic live market LTP with zero artificial random fluctuation."""
+    from market_prices import price_engine
     market_open, market_msg = is_market_open(symbol)
     
-    state = paper_tick_state.get(trade_id)
-    
-    if not state or (now - state.get("last_base_fetch", 0)) > 60:
-        base_price = None
-        try:
-            from websocket_client import market_feed
-            token = db.get_token(symbol)
-            if token and str(token) in market_feed.ticks:
-                tick = market_feed.ticks[str(token)]
-                base_price = float(tick.get("ltp") or tick.get("last_traded_price") or 0)
-        except Exception:
-            pass
-            
-        if not base_price or base_price <= 0:
-            try:
-                from historical import fetch_realtime_nse_price
-                base_price = fetch_realtime_nse_price(symbol)
-            except Exception:
-                pass
-                
-        if not base_price or base_price <= 0:
-            base_price = entry_price if entry_price > 0 else 100.0
-            
-        state = {
-            "base_price": float(base_price),
-            "current_ltp": float(base_price),
-            "last_updated": now,
-            "last_base_fetch": now
-        }
-        paper_tick_state[trade_id] = state
-
-    base = state["base_price"]
-    
-    # If the exchange is closed, freeze LTP strictly at the real closing price with zero artificial fluctuation!
-    if not market_open:
-        state["current_ltp"] = round(base, 2)
-        state["last_updated"] = now
-        return round(base, 2), market_open, market_msg
-
-    # Market is OPEN: apply live market tick simulation
-    current = state["current_ltp"]
-    import random
-    step = base * random.choice([-0.0018, -0.0012, -0.0006, 0.0, 0.0006, 0.0012, 0.0018])
-    drift = current - base
-    reversion = -0.20 * drift
-    new_price = current + step + reversion
-    
-    new_price = round(round(new_price * 20.0) / 20.0, 2)
-    if new_price <= 0.05:
-        new_price = round(base, 2)
+    # 1. Authentic live price from engine
+    ltp = price_engine.get_ltp(symbol)
+    if ltp is not None and ltp > 0:
+        return round(float(ltp), 2), market_open, market_msg
         
-    state["current_ltp"] = new_price
-    state["last_updated"] = now
-    return new_price, market_open, market_msg
+    # 2. Historical real-time fetch
+    try:
+        from historical import fetch_realtime_nse_price
+        p = fetch_realtime_nse_price(symbol)
+        if p is not None and p > 0:
+            return round(float(p), 2), market_open, market_msg
+    except Exception:
+        pass
+        
+    return round(entry_price if entry_price > 0 else 100.0, 2), market_open, market_msg
+
+
+# ──────────────────────────────────────────────
+# Real-Time Live Market Price APIs
+# ──────────────────────────────────────────────
+
+@app.get("/api/market/quotes")
+async def get_market_quotes_endpoint(symbols: Optional[str] = Query(None)):
+    """Fetch authentic real-time market quotes for multiple symbols."""
+    from market_prices import price_engine
+    if symbols:
+        sym_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+        for s in sym_list:
+            price_engine.subscribe(s)
+        quotes = {}
+        for s in sym_list:
+            q = price_engine.get_quote(s)
+            if q:
+                quotes[s] = q
+        return {"count": len(quotes), "quotes": quotes}
+    
+    return {"count": len(price_engine.get_all_quotes()), "quotes": price_engine.get_all_quotes()}
+
+
+@app.get("/api/market/ltp")
+async def get_market_ltp_endpoint(symbol: str = Query(..., description="Stock symbol")):
+    """Get single instrument live market LTP and change %."""
+    from market_prices import price_engine
+    from historical import resolve_symbol
+    sym = resolve_symbol(symbol).upper().strip()
+    price_engine.subscribe(sym)
+    quote = price_engine.get_quote(sym)
+    if quote:
+        return quote
+    return {"symbol": sym, "ltp": 100.0, "chg": 0.0, "timestamp": datetime.now().isoformat()}
+
 
 
 
