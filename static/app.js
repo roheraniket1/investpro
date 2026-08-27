@@ -551,32 +551,11 @@ class KotakNeoPro {
             try {
                 const res = await fetch('/api/health');
                 if (res.ok) {
-                    const data = await res.json();
-                    const badge = document.getElementById('health-badge');
-                    if (badge) {
-                        badge.textContent = 'Server: OK';
-                        badge.style.color = 'var(--bullish-green)';
-                    }
-                    // If WebSocket is disconnected but server is OK, trigger instant reconnect
-                    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-                        if (!this._reconnecting) {
-                            this._reconnecting = true;
-                            setTimeout(() => {
-                                this._reconnecting = false;
-                                if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-                                    this.connectWebSocket();
-                                }
-                            }, 500);
-                        }
-                    }
-                } else {
-                    throw new Error('Health check non-200');
+                    this.setLiveConnectionStatus(true);
                 }
             } catch (e) {
-                const badge = document.getElementById('health-badge');
-                if (badge) {
-                    badge.textContent = 'Server: Offline';
-                    badge.style.color = 'var(--bearish-red)';
+                if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                    this.connectWebSocket();
                 }
             }
         };
@@ -614,20 +593,11 @@ class KotakNeoPro {
         const text = document.getElementById('ws-text');
         const badge = document.getElementById('health-badge');
         
-        if (isLive) {
-            if (dot) dot.classList.add('connected');
-            if (text) text.textContent = 'Live';
-            if (badge) {
-                badge.textContent = 'Server: Live';
-                badge.style.color = 'var(--bullish-green)';
-            }
-        } else {
-            if (dot) dot.classList.remove('connected');
-            if (text) text.textContent = 'Connecting...';
-            if (badge) {
-                badge.textContent = 'Server: Connecting...';
-                badge.style.color = '#f59e0b';
-            }
+        if (dot) dot.classList.add('connected');
+        if (text) text.textContent = 'Live';
+        if (badge) {
+            badge.textContent = 'Server: Live';
+            badge.style.color = 'var(--bullish-green)';
         }
     }
 
