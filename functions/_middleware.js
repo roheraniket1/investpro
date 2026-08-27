@@ -28,14 +28,25 @@ export async function onRequest(context) {
       reqInit.duplex = "half";
     }
     
-    try {
-      return await fetch(targetUrl.toString(), reqInit);
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Backend connecting...", detail: String(err) }), {
-        status: 502,
-        headers: { "Content-Type": "application/json" }
-      });
+    let lastError = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const resp = await fetch(targetUrl.toString(), reqInit);
+        if (resp.status !== 502 && resp.status !== 503) {
+          return resp;
+        }
+      } catch (err) {
+        lastError = err;
+      }
     }
+    
+    return new Response(JSON.stringify({ 
+      error: "Server warming up. Please wait 3 seconds and retry.",
+      detail: String(lastError || "Backend unreachable")
+    }), {
+      status: 502,
+      headers: { "Content-Type": "application/json" }
+    });
   }
   
   return context.next();

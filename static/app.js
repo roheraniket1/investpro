@@ -184,11 +184,12 @@ class KotakNeoPro {
         // Form Submit
         if (submitBtn) {
             submitBtn.onclick = async () => {
-                const mob = (mobileInput ? mobileInput.value : '').trim();
+                const rawMob = (mobileInput ? mobileInput.value : '').trim();
+                const cleanMob = rawMob.replace(/\D/g, '').slice(-10);
                 const pw = (pwInput ? pwInput.value : '').trim();
                 const fn = (nameInput ? nameInput.value : '').trim();
 
-                if (!mob || mob.length !== 10) {
+                if (!cleanMob || cleanMob.length !== 10) {
                     if (alertBox) {
                         alertBox.style.display = 'block';
                         alertBox.style.background = 'rgba(239,68,68,0.15)';
@@ -211,21 +212,37 @@ class KotakNeoPro {
                 }
 
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Connecting...';
+                submitBtn.textContent = authMode === 'login' ? 'Signing In...' : 'Creating Account...';
 
                 try {
                     const endpoint = authMode === 'login' ? '/api/user/login' : '/api/user/register';
-                    const payload = authMode === 'login' ? { mobile: mob, password: pw } : { mobile: mob, password: pw, full_name: fn };
+                    const payload = authMode === 'login' ? { mobile: cleanMob, password: pw } : { mobile: cleanMob, password: pw, full_name: fn };
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
                     const res = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
                     });
+                    clearTimeout(timeoutId);
 
                     const data = await res.json();
                     if (!res.ok) {
-                        throw new Error(data.detail || 'Authentication failed');
+                        const errMsg = data.detail || data.error || 'Authentication failed';
+                        // Smart mode switching
+                        if (errMsg.includes('already exists') && authMode === 'register') {
+                            setAuthMode('login');
+                            if (pwInput) pwInput.value = pw;
+                            throw new Error('Account already exists! Please click Sign In with your password.');
+                        } else if (errMsg.includes('No account found') && authMode === 'login') {
+                            setAuthMode('register');
+                            if (pwInput) pwInput.value = pw;
+                            throw new Error('No account found. Switched to Create Account — enter your name & click submit.');
+                        }
+                        throw new Error(errMsg);
                     }
 
                     this.sessionToken = data.user.token;
@@ -237,7 +254,7 @@ class KotakNeoPro {
                         authModal.style.display = 'none';
                         if (closeAuthBtn) closeAuthBtn.style.display = 'block';
                     }
-                    this.showNotification(`Welcome, ${data.user.full_name}! ₹${(data.user.virtual_balance/100000).toFixed(1)}L active.`, 'success');
+                    this.showNotification(`Namaste, ${data.user.full_name} Ji! Logged in successfully.`, 'success');
                     this.loadPaperPortfolio();
                 } catch (err) {
                     if (alertBox) {
@@ -245,7 +262,7 @@ class KotakNeoPro {
                         alertBox.style.background = 'rgba(239,68,68,0.15)';
                         alertBox.style.color = '#f87171';
                         alertBox.style.border = '1px solid rgba(239,68,68,0.3)';
-                        alertBox.textContent = err.message || 'Authentication error';
+                        alertBox.textContent = err.name === 'AbortError' ? 'Connecting to cloud server... Please retry in a few seconds.' : (err.message || 'Authentication error');
                     }
                 } finally {
                     submitBtn.disabled = false;
@@ -482,32 +499,47 @@ class KotakNeoPro {
         setInterval(fetchAlerts, 15000);
     }
 
-    connectWebSocket() {
+    setLiveConnectionStatus(isLive) {
         const dot = document.getElementById('ws-status');
         const text = document.getElementById('ws-text');
+        const badge = document.getElementById('health-badge');
         
+        if (isLive) {
+            if (dot) dot.classList.add('connected');
+            if (text) text.textContent = 'Live';
+            if (badge) {
+                badge.textContent = 'Server: Live';
+                badge.style.color = 'var(--bullish-green)';
+            }
+        } else {
+            if (dot) dot.classList.remove('connected');
+            if (text) text.textContent = 'Connecting...';
+            if (badge) {
+                badge.textContent = 'Server: Connecting...';
+                badge.style.color = '#f59e0b';
+            }
+        }
+    }
+
+    connectWebSocket() {
         try {
             if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
                 return;
             }
 
-            if (text && (!this.ws || this.ws.readyState !== WebSocket.OPEN)) {
-                text.textContent = 'Connecting...';
+            // Direct Render backend WebSocket for Cloudflare Pages
+            let wsUrl;
+            if (window.location.hostname.includes('pages.dev') || window.location.hostname.includes('investpro')) {
+                wsUrl = 'wss://investpro-riyy.onrender.com/ws/live';
+            } else {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                wsUrl = `${protocol}//${window.location.host}/ws/live`;
             }
 
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws/live`;
             this.ws = new WebSocket(wsUrl);
             
             this.ws.onopen = () => {
-                if (dot) dot.classList.add('connected');
-                if (text) text.textContent = 'Live';
-                const badge = document.getElementById('health-badge');
-                if (badge) {
-                    badge.textContent = 'Server: OK';
-                    badge.style.color = 'var(--bullish-green)';
-                }
-                // Send immediate ping
+                this.setLiveConnectionStatus(true);
                 try {
                     this.ws.send(JSON.stringify({ action: 'ping' }));
                 } catch(e) {}
@@ -516,13 +548,11 @@ class KotakNeoPro {
             this.ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    if (data.type === 'connected' || data.type === 'pong') {
-                        if (dot) dot.classList.add('connected');
-                        if (text) text.textContent = 'Live';
-                    } else if (data.type === 'paper_alert') {
+                    this.setLiveConnectionStatus(true);
+                    if (data.type === 'paper_alert') {
                         this.showNotification(data.message, 'success');
                         this.loadPaperPortfolio();
-                    } else {
+                    } else if (data.type !== 'connected' && data.type !== 'pong') {
                         this.updateLivePrices(data);
                     }
                 } catch(err) {
@@ -531,19 +561,19 @@ class KotakNeoPro {
             };
             
             this.ws.onclose = () => {
-                if (dot) dot.classList.remove('connected');
-                if (text) text.textContent = 'Connecting...';
-                setTimeout(() => this.connectWebSocket(), 1500);
+                if (!this.lastQuoteSyncSuccess || (Date.now() - this.lastQuoteSyncSuccess > 6000)) {
+                    this.setLiveConnectionStatus(false);
+                }
+                setTimeout(() => this.connectWebSocket(), 2000);
             };
 
-            this.ws.onerror = (err) => {
-                if (dot) dot.classList.remove('connected');
-                if (text) text.textContent = 'Connecting...';
+            this.ws.onerror = () => {
+                if (!this.lastQuoteSyncSuccess || (Date.now() - this.lastQuoteSyncSuccess > 6000)) {
+                    this.setLiveConnectionStatus(false);
+                }
             };
         } catch (e) {
-            if (dot) dot.classList.remove('connected');
-            if (text) text.textContent = 'Connecting...';
-            setTimeout(() => this.connectWebSocket(), 2000);
+            setTimeout(() => this.connectWebSocket(), 2500);
         }
 
         // Heartbeat keepalive every 15 seconds
@@ -569,6 +599,8 @@ class KotakNeoPro {
                     const res = await fetch(`/api/market/quotes?symbols=${encodeURIComponent(Array.from(symsToPoll).join(','))}`);
                     if (res.ok) {
                         const json = await res.json();
+                        this.lastQuoteSyncSuccess = Date.now();
+                        this.setLiveConnectionStatus(true);
                         if (json.quotes) {
                             this.updateLivePrices(json.quotes);
                         }
