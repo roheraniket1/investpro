@@ -349,14 +349,23 @@ class ScripDatabase:
         """, (user["id"], ident, otp, exp_dt, now_dt.isoformat()))
         self.conn.commit()
 
+        user_email = user["email"] if "email" in user.keys() and user["email"] else ""
+        masked_email = ""
+        if user_email and "@" in user_email:
+            parts = user_email.split("@")
+            masked_email = f"{parts[0][:2]}***@{parts[1]}"
+        else:
+            masked_email = f"Mobile +91 {user['mobile'][-4:]}"
+
         # Dispatch Email asynchronously if email is registered
         if user_email:
             try:
                 import threading
                 from email_service import send_password_reset_email
+                user_name = user["full_name"] if "full_name" in user.keys() else "Trader"
                 threading.Thread(
                     target=send_password_reset_email,
-                    args=(user_email, user.get("full_name", "Trader"), otp),
+                    args=(user_email, user_name, otp),
                     daemon=True
                 ).start()
             except Exception:
