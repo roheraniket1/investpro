@@ -83,6 +83,8 @@ def send_credentials_email(to_email: str, user_name: str, mobile: str, temp_pass
     sender_addr = (SMTP_USER or "").strip()
     sender_pass = (SMTP_PASS or "").strip().replace(" ", "")
 
+    errors = []
+
     # 1. Try SSL direct on Port 465
     if SMTP_HOST and sender_addr and sender_pass:
         try:
@@ -92,14 +94,15 @@ def send_credentials_email(to_email: str, user_name: str, mobile: str, temp_pass
             msg["To"] = to_email_clean
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP_SSL(SMTP_HOST, 465, timeout=12) as server:
+            with smtplib.SMTP_SSL(SMTP_HOST, 465, timeout=10) as server:
                 server.login(sender_addr, sender_pass)
                 server.sendmail(sender_addr, [to_email_clean], msg.as_string())
 
             logger.info(f"✅ [EmailService] Credentials email sent via SSL (465) to {to_email_clean}")
             return True, f"Sent via SSL 465 to {to_email_clean}"
         except Exception as e_ssl:
-            logger.warning(f"⚠️ [EmailService] SSL 465 attempt failed: {e_ssl}. Trying TLS 587...")
+            errors.append(f"SSL_465_ERROR: {str(e_ssl)}")
+            logger.warning(f"⚠️ [EmailService] SSL 465 attempt failed: {e_ssl}")
 
     # 2. Try TLS on Port 587
     if SMTP_HOST and sender_addr and sender_pass:
@@ -110,7 +113,7 @@ def send_credentials_email(to_email: str, user_name: str, mobile: str, temp_pass
             msg["To"] = to_email_clean
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP(SMTP_HOST, 587, timeout=12) as server:
+            with smtplib.SMTP(SMTP_HOST, 587, timeout=10) as server:
                 server.starttls()
                 server.login(sender_addr, sender_pass)
                 server.sendmail(sender_addr, [to_email_clean], msg.as_string())
@@ -118,6 +121,7 @@ def send_credentials_email(to_email: str, user_name: str, mobile: str, temp_pass
             logger.info(f"✅ [EmailService] Credentials email sent via TLS (587) to {to_email_clean}")
             return True, f"Sent via TLS 587 to {to_email_clean}"
         except Exception as e_tls:
+            errors.append(f"TLS_587_ERROR: {str(e_tls)}")
             logger.error(f"❌ [EmailService] TLS 587 attempt failed: {e_tls}")
 
     # 3. Try Resend API (HTTPS)
@@ -137,8 +141,10 @@ def send_credentials_email(to_email: str, user_name: str, mobile: str, temp_pass
             if resp.status_code in (200, 201):
                 logger.info(f"✅ [EmailService] Email sent via Resend API to {to_email_clean}")
                 return True, f"Sent via Resend API to {to_email_clean}"
+            else:
+                errors.append(f"RESEND_ERROR_{resp.status_code}: {resp.text}")
         except Exception as e:
-            logger.error(f"❌ [EmailService] Resend exception: {e}")
+            errors.append(f"RESEND_EXC: {str(e)}")
 
-    logger.error(f"❌ [EmailService] All email dispatch methods failed for {to_email_clean}")
-    return False, "Failed to deliver email through all configured providers."
+    logger.error(f"❌ [EmailService] All email dispatch methods failed: {errors}")
+    return False, f"Failed: {'; '.join(errors)}"
