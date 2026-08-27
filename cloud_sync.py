@@ -40,7 +40,7 @@ class CloudKVSync:
         """Read key-value from Cloudflare KV."""
         url = f"{KV_BASE}/{key}"
         try:
-            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {CF_API_TOKEN}"})
+            req = urllib.request.Request(url, headers=self.headers)
             with urllib.request.urlopen(req, timeout=5.0) as resp:
                 return resp.read().decode("utf-8")
         except urllib.error.HTTPError as he:
