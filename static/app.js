@@ -49,22 +49,51 @@ class KotakNeoPro {
 
         // Defer heavy API calls to after page is painted - makes app feel instant
         setTimeout(() => {
+            this.fetchLiveQuotesNow();
             this.connectWebSocket();
             this.checkHealth();
             this.initAlertsTicker();
             this.loadSignals('intraday');
-        }, 400);
+        }, 100);
 
         setTimeout(() => {
             this.loadScreener('top_gainers');
-        }, 1200);
+        }, 800);
 
         setTimeout(() => {
             this.loadAIDailyBriefing();
             this.startPaperLiveTicker();
-        }, 2000);
+        }, 1500);
     }
 
+    formatNumber(num) {
+        if (num === null || num === undefined || isNaN(num)) return '--';
+        return Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    formatCurrency(amount) {
+        if (amount === null || amount === undefined || isNaN(amount)) return '₹0.00';
+        return '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async fetchLiveQuotesNow() {
+        try {
+            const symsToPoll = new Set(['NIFTY 50', 'BANK NIFTY', 'NIFTY IT', 'SENSEX', 'RELIANCE', 'TMCV', 'GOLD', 'CRUDEOIL', 'SILVER']);
+            if (this.activeSymbol) symsToPoll.add(this.activeSymbol);
+            if (this.user && this.user.watchlist && Array.isArray(this.user.watchlist)) {
+                this.user.watchlist.forEach(s => symsToPoll.add(s));
+            }
+            const res = await fetch(`/api/market/quotes?symbols=${encodeURIComponent(Array.from(symsToPoll).join(','))}`);
+            if (res.ok) {
+                const json = await res.json();
+                this.lastQuoteSyncSuccess = Date.now();
+                this.setLiveConnectionStatus(true);
+                if (json.quotes) {
+                    this.updateLivePrices(json.quotes);
+                }
+            }
+        } catch(e) {}
+    }
 
     getAuthHeaders(customHeaders = {}) {
         const headers = { 'Content-Type': 'application/json', ...customHeaders };
@@ -695,17 +724,13 @@ class KotakNeoPro {
             }, 15000);
         }
 
-        // Live Market Price Polling Streamer (fallback sync for Mobile & Desktop)
+        // Live Market Price Polling Streamer (Continuous 1.5s Edge Streamer)
         if (!this.quoteSyncInterval) {
             this.quoteSyncInterval = setInterval(async () => {
-                // Skip redundant HTTP poll if WebSocket is active and streaming live
-                if (this.ws && this.ws.readyState === WebSocket.OPEN && (Date.now() - (this.lastWsTickTime || 0) < 6000)) {
-                    return;
-                }
                 if (document.hidden) return; // Save bandwidth when tab is in background
 
                 try {
-                    const symsToPoll = new Set(['NIFTY 50', 'BANK NIFTY', 'NIFTY IT', 'SENSEX']);
+                    const symsToPoll = new Set(['NIFTY 50', 'BANK NIFTY', 'NIFTY IT', 'SENSEX', 'RELIANCE', 'TMCV', 'TMPV', 'GOLD', 'CRUDEOIL', 'SILVER']);
                     if (this.activeSymbol) symsToPoll.add(this.activeSymbol);
                     if (this.user && this.user.watchlist && Array.isArray(this.user.watchlist)) {
                         this.user.watchlist.forEach(s => symsToPoll.add(s));
@@ -720,7 +745,7 @@ class KotakNeoPro {
                         }
                     }
                 } catch(e) {}
-            }, 3000);
+            }, 1500);
         }
     }
 
