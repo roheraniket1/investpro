@@ -18,4 +18,5 @@ httpx
 jinja2
 python-multipart
 pytz
+bcrypt
 
