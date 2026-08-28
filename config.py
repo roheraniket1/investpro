@@ -40,6 +40,13 @@ CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "")
 CLOUDFLARE_KV_NAMESPACE_ID = os.getenv("CLOUDFLARE_KV_NAMESPACE_ID", "cb5b0241ef5e4aec8d8da49bd6fe625d")
 
 # -------------------------------
+# Supabase PostgreSQL Cloud Store
+# -------------------------------
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ienffkepzepvtrigavwm.supabase.co")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZma2VwemVwdnRyaWdhdndtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDE5NzQsImV4cCI6MjEwMzUxNzk3NH0.e41tg4obkrIlHKjIkBPePVTM438wBOdM2tJmuHZfhBk")
+SUPABASE_DB_PASS = os.getenv("SUPABASE_DB_PASS", "roheraniket1")
+
+# -------------------------------
 # Logs
 # -------------------------------
 

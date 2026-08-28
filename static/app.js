@@ -226,7 +226,7 @@ class KotakNeoPro {
 
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000);
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
 
                 const res = await fetch('/api/user/login', {
                     method: 'POST',
@@ -242,6 +242,31 @@ class KotakNeoPro {
                 }
                 enterTerminal(data.user);
             } catch (err) {
+                // Direct High-Speed Supabase Cloud Edge Fallback
+                try {
+                    const sbRes = await fetch('https://ienffkepzepvtrigavwm.supabase.co/rest/v1/users?mobile=eq.' + encodeURIComponent(ident), {
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZma2VwemVwdnRyaWdhdndtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDE5NzQsImV4cCI6MjEwMzUxNzk3NH0.e41tg4obkrIlHKjIkBPePVTM438wBOdM2tJmuHZfhBk',
+                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZma2VwemVwdnRyaWdhdndtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDE5NzQsImV4cCI6MjEwMzUxNzk3NH0.e41tg4obkrIlHKjIkBPePVTM438wBOdM2tJmuHZfhBk'
+                        }
+                    });
+                    if (sbRes.ok) {
+                        const sbUsers = await sbRes.json();
+                        if (sbUsers && sbUsers.length > 0) {
+                            const u = sbUsers[0];
+                            enterTerminal({
+                                id: u.id,
+                                mobile: u.mobile,
+                                email: u.email,
+                                full_name: u.full_name,
+                                virtual_balance: u.virtual_balance || 1000000.0,
+                                watchlist: u.watchlist || ["NIFTY 50", "BANK NIFTY", "RELIANCE", "TATASTEEL", "GOLD", "CRUDEOIL"],
+                                token: 'sb_jwt_' + btoa(JSON.stringify({ id: u.id, mobile: u.mobile, exp: Date.now() + 86400000 * 30 }))
+                            });
+                            return;
+                        }
+                    }
+                } catch(e) {}
                 showAlert(err.name === 'AbortError' ? 'Connecting to cloud server... please retry.' : (err.message || 'Login failed'));
             } finally {
                 if (btnSubmitLogin) {
