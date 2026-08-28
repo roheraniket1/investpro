@@ -34,6 +34,9 @@ YAHOO_SYMBOL_MAP = {
     'CRUDEOILM': 'CL=F',
     'NATURALGAS': 'NG=F',
     'COPPER': 'HG=F',
+    'TATAMOTORS': 'TMCV.NS',
+    'TMCV': 'TMCV.NS',
+    'TMPV': 'TMPV.NS',
 }
 
 # Core symbols always monitored and broadcasted

@@ -177,6 +177,10 @@ def _format_symbol(symbol: str) -> str:
         return "NG=F"
     if sym in ["COPPER", "COPPERM"]:
         return "HG=F"
+    if sym in ["TATAMOTORS", "TATA MOTORS", "TMCV"]:
+        return "TMCV.NS"
+    if sym in ["TMPV"]:
+        return "TMPV.NS"
     if not sym.endswith('.NS') and not sym.endswith('.BO') and not sym.endswith('=F'):
         return f"{sym}.NS"
     return sym
