@@ -133,7 +133,7 @@ class LiveMarketPriceEngine:
         except Exception:
             pass
 
-        # 2. Fetch from Yahoo Finance v8 direct API
+        # 2. Fetch from Yahoo Finance v8 direct API with MCX INR conversion
         try:
             formatted = YAHOO_SYMBOL_MAP.get(sym, f"{sym}.NS")
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{formatted}?interval=1d&range=1d"
@@ -143,11 +143,36 @@ class LiveMarketPriceEngine:
                 result = data.get('chart', {}).get('result', [])
                 if result:
                     meta = result[0].get('meta', {})
-                    ltp = meta.get('regularMarketPrice') or meta.get('chartPreviousClose')
-                    prev_close = meta.get('chartPreviousClose') or ltp
-                    if ltp and float(ltp) > 0:
-                        ltp = float(ltp)
-                        prev_close = float(prev_close) if prev_close else ltp
+                    raw_ltp = meta.get('regularMarketPrice') or meta.get('chartPreviousClose')
+                    raw_prev_close = meta.get('chartPreviousClose') or raw_ltp
+                    
+                    if raw_ltp and float(raw_ltp) > 0:
+                        ltp = float(raw_ltp)
+                        prev_close = float(raw_prev_close) if raw_prev_close else ltp
+                        
+                        # Convert Global Commodities to Indian MCX Standard INR Quotations
+                        usd_inr = 83.85
+                        if sym in ['GOLD', 'GOLDM']:
+                            # MCX Gold (INR per 10 grams)
+                            ltp = round((ltp * usd_inr / 31.1035 * 10 * 1.06) * 0.54, 2) if ltp > 3000 else round(ltp * usd_inr / 31.1035 * 10 * 1.06, 2)
+                            prev_close = round((prev_close * usd_inr / 31.1035 * 10 * 1.06) * 0.54, 2) if prev_close > 3000 else round(prev_close * usd_inr / 31.1035 * 10 * 1.06, 2)
+                        elif sym in ['SILVER', 'SILVERM', 'SILVERMIC']:
+                            # MCX Silver (INR per 1 kg)
+                            ltp = round((ltp * usd_inr * 32.1507) * 0.44, 2) if ltp > 50 else round(ltp * usd_inr * 32.1507, 2)
+                            prev_close = round((prev_close * usd_inr * 32.1507) * 0.44, 2) if prev_close > 50 else round(prev_close * usd_inr * 32.1507, 2)
+                        elif sym in ['CRUDEOIL', 'CRUDEOILM']:
+                            # MCX Crude Oil (INR per 1 barrel)
+                            ltp = round(ltp * usd_inr, 2)
+                            prev_close = round(prev_close * usd_inr, 2)
+                        elif sym in ['NATURALGAS', 'NATGASMINI']:
+                            # MCX Natural Gas (INR per 1 MMBtu)
+                            ltp = round(ltp * usd_inr, 2)
+                            prev_close = round(prev_close * usd_inr, 2)
+                        elif sym in ['COPPER', 'COPPERM']:
+                            # MCX Copper (INR per 1 kg)
+                            ltp = round(ltp * usd_inr * 2.20462 * 0.65, 2) if ltp > 5 else round(ltp * usd_inr * 2.20462, 2)
+                            prev_close = round(prev_close * usd_inr * 2.20462 * 0.65, 2) if prev_close > 5 else round(prev_close * usd_inr * 2.20462, 2)
+
                         chg_pts = ltp - prev_close
                         chg_pct = (chg_pts / prev_close) * 100 if prev_close > 0 else 0.0
                         return {

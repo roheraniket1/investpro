@@ -630,7 +630,9 @@ class KotakNeoPro {
                     this.lastWsTickTime = Date.now();
                     const data = JSON.parse(event.data);
                     this.setLiveConnectionStatus(true);
-                    if (data.type === 'paper_alert') {
+                    if (data.type === 'quotes' && data.quotes) {
+                        this.updateLivePrices(data.quotes);
+                    } else if (data.type === 'paper_alert') {
                         this.showNotification(data.message, 'success');
                         this.loadPaperPortfolio();
                     } else if (data.type !== 'connected' && data.type !== 'pong') {
@@ -1171,6 +1173,15 @@ class KotakNeoPro {
 
     async analyzeStock(symbol) {
         this.currentSymbol = symbol;
+        this.activeSymbol = symbol;
+        
+        // Notify backend to stream real-time ticks for this active stock
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            try {
+                this.ws.send(JSON.stringify({ action: 'subscribe', symbol }));
+            } catch(e) {}
+        }
+
         document.getElementById('analyzer-results').style.display = 'none';
         document.getElementById('analyzer-skeleton').style.display = 'grid';
         

@@ -834,7 +834,20 @@ async def analyze_stock(req: Optional[AnalyzeRequest] = None, symbol: Optional[s
         ta = TechnicalAnalyzer(symbol)
         rsi = ta.rsi()
         close = ta.close_price()
-        direction = "BUY" if rsi < 55 else "SELL"
+        overall = ta.overall_score()
+        sig = overall.get("signal", "HOLD")
+        trend = ta.trend_strength()
+        macd = ta.macd()
+        hist = macd.get('histogram', 0)
+        
+        # Professional multi-factor technical confluence
+        if sig == "BUY" or 'Bullish' in str(trend) or (rsi >= 50 and hist >= 0):
+            direction = "BUY"
+        elif sig == "SELL" or 'Bearish' in str(trend) or (rsi < 45 and hist < 0):
+            direction = "SELL"
+        else:
+            direction = "BUY" if rsi >= 50 else "SELL"
+
         dyn = ta.calculate_dynamic_targets(timeframe="swing", direction=direction)
         
         target = dyn["target_2"] if direction == "BUY" else dyn["target_1"]
@@ -842,7 +855,7 @@ async def analyze_stock(req: Optional[AnalyzeRequest] = None, symbol: Optional[s
         profit_pct = round(((abs(target - close)) / close) * 100, 1)
         rr = dyn["risk_reward"]
         sign = "+" if direction == "BUY" else "-"
-        reason = f"Multi-factor setup with RSI ({rsi:.1f}) and ATR volatility expansion. Projected target {sign}{profit_pct}% (R:R 1:{rr})."
+        reason = f"Confluence setup: {trend} with RSI ({rsi:.1f}) and ATR volatility expansion. Projected target {sign}{profit_pct}% (R:R 1:{rr})."
         expected_days = 7
             
         result["trade_signal"] = {
@@ -1833,69 +1846,44 @@ async def daily_scan_scheduler():
 
 
 async def poll_prices_fallback():
-    """Fallback price poll/generator for dashboard overview indices using Kotak REST quotes API."""
-    prices = {
-        "NIFTY 50": {"ltp": 24383.6, "chg": 0.27},
-        "BANK NIFTY": {"ltp": 57147.5, "chg": -0.1},
-        "NIFTY IT": {"ltp": 31194.5, "chg": 0.5}
-    }
+    """Real-time live price streamer and broadcaster for all indices, stocks, and commodities."""
+    from market_prices import price_engine
     
     while True:
         try:
-            # Query Kotak REST quotes API to get live index prices
-            from auth import get_client
-            client = get_client()
-            if client:
-                tokens_to_query = [
-                    {"instrument_token": "Nifty 50", "exchange_segment": "nse_cm"},
-                    {"instrument_token": "Nifty Bank", "exchange_segment": "nse_cm"},
-                    {"instrument_token": "Nifty IT", "exchange_segment": "nse_cm"}
-                ]
-                res = client.quotes(instrument_tokens=tokens_to_query, quote_type="all")
-                if isinstance(res, list):
-                    for item in res:
-                        ex_tok = item.get("exchange_token")
-                        ltp_val = item.get("ltp")
-                        chg_val = item.get("per_change")
-                        if ltp_val is not None and chg_val is not None:
-                            try:
-                                if ex_tok == "Nifty 50":
-                                    prices["NIFTY 50"]["ltp"] = float(ltp_val)
-                                    prices["NIFTY 50"]["chg"] = float(chg_val)
-                                elif ex_tok == "Nifty Bank":
-                                    prices["BANK NIFTY"]["ltp"] = float(ltp_val)
-                                    prices["BANK NIFTY"]["chg"] = float(chg_val)
-                                elif ex_tok == "Nifty IT":
-                                    prices["NIFTY IT"]["ltp"] = float(ltp_val)
-                                    prices["NIFTY IT"]["chg"] = float(chg_val)
-                            except ValueError:
-                                pass
+            # 1. Fetch live quotes across monitored universe in background worker thread
+            updated = await asyncio.to_thread(price_engine.refresh_all_active)
             
-            # Broadcast the live index values
-            for sym in prices:
-                payload = {
-                    sym: {
-                        "ltp": round(prices[sym]["ltp"], 2),
-                        "chg": round(prices[sym]["chg"], 2)
-                    }
-                }
+            if updated:
+                # Structured multi-quote packet for frontend real-time sync
+                multi_payload = {"type": "quotes", "quotes": updated}
                 
                 with ws_lock:
                     clients = list(ws_clients)
+                    
                 for client in clients:
                     try:
-                        await client.send_json(payload)
+                        await client.send_json(multi_payload)
+                        # Also broadcast individual index payloads for backward-compatibility
+                        for sym in ["NIFTY 50", "BANK NIFTY", "NIFTY IT", "SENSEX"]:
+                            if sym in updated:
+                                await client.send_json({
+                                    sym: {
+                                        "ltp": updated[sym]["ltp"],
+                                        "chg": updated[sym]["chg"]
+                                    }
+                                })
                     except Exception:
                         pass
             
-            # Poll speed adapts dynamically based on market hours
+            # Poll speed adapts dynamically based on market hours (1.5s during market)
             if is_market_open():
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(1.5)
             else:
-                await asyncio.sleep(5.0)
+                await asyncio.sleep(4.0)
         except Exception as e:
-            logger.error(f"Fallback poll error: {repr(e)}")
-            await asyncio.sleep(5.0)
+            logger.error(f"Price streamer error: {repr(e)}")
+            await asyncio.sleep(3.0)
 
 
 # ──────────────────────────────────────────────
