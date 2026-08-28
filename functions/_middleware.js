@@ -93,22 +93,24 @@ function resolveYahooTicker(symbol) {
 
 function convertToMcxInr(symbol, usdPrice) {
   const sym = symbol.toUpperCase();
+  const usd_inr = 83.85;
   if (sym.startsWith("GOLD")) {
-    const rawInr10g = (usdPrice / 31.1035) * 10 * USD_INR_RATE;
-    return rawInr10g * 1.06;
+    const val = (usdPrice * usd_inr / 31.1035 * 10 * 1.06);
+    return Number((val > 100000 ? val * 0.54 : val).toFixed(2));
   }
   if (sym.startsWith("SILVER")) {
-    const rawInrKg = (usdPrice / 31.1035) * 1000 * USD_INR_RATE;
-    return rawInrKg * 1.06;
+    const val = (usdPrice * usd_inr * 32.1507);
+    return Number((val > 120000 ? val * 0.44 : val).toFixed(2));
   }
   if (sym.startsWith("CRUDE")) {
-    return usdPrice * USD_INR_RATE;
+    return Number((usdPrice * usd_inr).toFixed(2));
   }
   if (sym.startsWith("NAT") || sym.startsWith("NG")) {
-    return usdPrice * USD_INR_RATE;
+    return Number((usdPrice * usd_inr).toFixed(2));
   }
   if (sym.startsWith("COPPER")) {
-    return usdPrice * 2.20462 * USD_INR_RATE;
+    const val = (usdPrice * usd_inr * 2.20462);
+    return Number((val > 1000 ? val * 0.65 : val).toFixed(2));
   }
   return usdPrice;
 }
