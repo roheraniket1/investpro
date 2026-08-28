@@ -754,8 +754,27 @@ class ScripDatabase:
         profile = self.get_user_profile(user_id)
         return profile.get("virtual_balance", 1000000.0)
 
-    def update_paper_balance(self, amount: float, user_id: int = 1):
-        self.update_user_profile(user_id, balance=amount)
+    def _supabase_sync(self, query: str, params: tuple):
+        import threading
+        def worker():
+            try:
+                import psycopg2
+                conn = psycopg2.connect(
+                    host="db.ienffkepzepvtrigavwm.supabase.co",
+                    port=5432,
+                    dbname="postgres",
+                    user="postgres",
+                    password="roheraniket1",
+                    connect_timeout=6
+                )
+                conn.autocommit = True
+                cur = conn.cursor()
+                cur.execute(query, params)
+                cur.close()
+                conn.close()
+            except Exception:
+                pass
+        threading.Thread(target=worker, daemon=True).start()
 
     def add_paper_trade(self, symbol: str, direction: str, qty: int, entry_price: float,
                         target: float, stoploss: float, user_id: int = 1) -> int:
@@ -769,6 +788,16 @@ class ScripDatabase:
             cloud_kv.async_backup_all_user_data(self.conn)
         except Exception:
             pass
+
+        # Sync to 24/7 Supabase PostgreSQL Cloud
+        try:
+            self._supabase_sync("""
+            INSERT INTO paper_trades (user_id, symbol, direction, qty, entry_price, target_price, stoploss_price, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, symbol, direction, qty, entry_price, target, stoploss, "OPEN"))
+        except Exception:
+            pass
+
         return cur.lastrowid
 
     def get_active_paper_trades(self, user_id: Optional[int] = None):
@@ -815,6 +844,17 @@ class ScripDatabase:
         new_balance = current_balance + margin_locked + pnl
         self.update_paper_balance(new_balance, trade_user_id)
         self.conn.commit()
+
+        # Sync Closed Trade & New Balance to Supabase PostgreSQL
+        try:
+            self._supabase_sync("""
+            UPDATE paper_trades
+            SET status=%s, exit_time=NOW(), exit_price=%s, pnl=%s
+            WHERE user_id=%s AND symbol=%s AND status='OPEN'
+            """, (status, exit_price, pnl, trade_user_id, trade["symbol"]))
+        except Exception:
+            pass
+
         return True
 
     def reset_paper_trading(self, user_id: int = 1):
