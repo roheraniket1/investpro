@@ -115,21 +115,36 @@ function convertToMcxInr(symbol, usdPrice) {
   return usdPrice;
 }
 
-// Fetch single quote from Yahoo Finance v8 direct API
+// Global Edge RAM Micro-Cache (0ms Response Time)
+const EDGE_QUOTE_CACHE = new Map();
+const EDGE_CANDLE_CACHE = new Map();
+const QUOTE_CACHE_TTL = 3000; // 3 seconds in Edge RAM
+const CANDLE_CACHE_TTL = 30000; // 30 seconds in Edge RAM
+
+// Fetch single quote from Yahoo Finance v8 direct API (with 0ms Edge RAM Caching)
 async function fetchQuote(symbol) {
+  const symKey = symbol.toUpperCase().trim();
+  const now = Date.now();
+  if (EDGE_QUOTE_CACHE.has(symKey)) {
+    const entry = EDGE_QUOTE_CACHE.get(symKey);
+    if (now - entry.timestamp < QUOTE_CACHE_TTL) {
+      return entry.data;
+    }
+  }
+
   const tick = resolveYahooTicker(symbol);
-  const isMcx = ["GOLD", "GOLDM", "SILVER", "SILVERM", "CRUDEOIL", "CRUDEOILM", "NATURALGAS", "COPPER"].includes(symbol.toUpperCase());
+  const isMcx = ["GOLD", "GOLDM", "SILVER", "SILVERM", "CRUDEOIL", "CRUDEOILM", "NATURALGAS", "COPPER"].includes(symKey);
   
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tick)}?interval=1d&range=1d`;
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      cf: { cacheTtl: 3, cacheEverything: true }
+      cf: { cacheTtl: 5, cacheEverything: true }
     });
-    if (!res.ok) return null;
+    if (!res.ok) return EDGE_QUOTE_CACHE.get(symKey)?.data || null;
     const data = await res.json();
     const meta = data?.chart?.result?.[0]?.meta;
-    if (!meta) return null;
+    if (!meta) return EDGE_QUOTE_CACHE.get(symKey)?.data || null;
 
     let ltp = meta.regularMarketPrice || meta.chartPreviousClose || 0;
     let prev = meta.chartPreviousClose || meta.previousClose || ltp;
@@ -148,8 +163,8 @@ async function fetchQuote(symbol) {
     const chgPts = ltp - prev;
     const chg = prev > 0 ? (chgPts / prev) * 100 : 0;
 
-    return {
-      symbol: symbol.toUpperCase(),
+    const quoteResult = {
+      symbol: symKey,
       ltp: Number(ltp.toFixed(2)),
       chg: Number(chg.toFixed(2)),
       chg_pts: Number(chgPts.toFixed(2)),
@@ -159,15 +174,27 @@ async function fetchQuote(symbol) {
       close: Number(prev.toFixed(2)),
       timestamp: new Date().toISOString()
     };
+
+    EDGE_QUOTE_CACHE.set(symKey, { timestamp: now, data: quoteResult });
+    return quoteResult;
   } catch (e) {
-    return null;
+    return EDGE_QUOTE_CACHE.get(symKey)?.data || null;
   }
 }
 
-// Fetch historical candlestick bars
+// Fetch historical candlestick bars (with 0ms Edge RAM Caching)
 async function fetchCandles(symbol, interval = "1d", range = "3mo") {
+  const symKey = `${symbol.toUpperCase().trim()}_${interval}_${range}`;
+  const now = Date.now();
+  if (EDGE_CANDLE_CACHE.has(symKey)) {
+    const entry = EDGE_CANDLE_CACHE.get(symKey);
+    if (now - entry.timestamp < CANDLE_CACHE_TTL) {
+      return entry.data;
+    }
+  }
+
   const tick = resolveYahooTicker(symbol);
-  const isMcx = ["GOLD", "GOLDM", "SILVER", "SILVERM", "CRUDEOIL", "CRUDEOILM", "NATURALGAS", "COPPER"].includes(symbol.toUpperCase());
+  const isMcx = ["GOLD", "GOLDM", "SILVER", "SILVERM", "CRUDEOIL", "CRUDEOILM", "NATURALGAS", "COPPER"].includes(symbol.toUpperCase().trim());
   
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tick)}?interval=${interval}&range=${range}`;
@@ -175,10 +202,10 @@ async function fetchCandles(symbol, interval = "1d", range = "3mo") {
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
       cf: { cacheTtl: 30, cacheEverything: true }
     });
-    if (!res.ok) return [];
+    if (!res.ok) return EDGE_CANDLE_CACHE.get(symKey)?.data || [];
     const data = await res.json();
     const result = data?.chart?.result?.[0];
-    if (!result) return [];
+    if (!result) return EDGE_CANDLE_CACHE.get(symKey)?.data || [];
 
     const timestamps = result.timestamp || [];
     const quote = result.indicators?.quote?.[0] || {};
@@ -214,9 +241,11 @@ async function fetchCandles(symbol, interval = "1d", range = "3mo") {
         });
       }
     }
+
+    EDGE_CANDLE_CACHE.set(symKey, { timestamp: now, data: candles });
     return candles;
   } catch (e) {
-    return [];
+    return EDGE_CANDLE_CACHE.get(symKey)?.data || [];
   }
 }
 
