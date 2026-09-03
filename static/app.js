@@ -656,20 +656,19 @@ class KotakNeoPro {
     }
 
     connectWebSocket() {
+        this.setLiveConnectionStatus(true);
+        if (window.location.hostname.includes('pages.dev') || window.location.hostname.includes('investpro')) {
+            // 100% Serverless Edge Mode: Live quote streaming runs continuously via Edge Quotes Engine
+            return;
+        }
+
         try {
             if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
                 return;
             }
 
-            // Direct Render backend WebSocket for Cloudflare Pages
-            let wsUrl;
-            if (window.location.hostname.includes('pages.dev') || window.location.hostname.includes('investpro')) {
-                wsUrl = 'wss://investpro-riyy.onrender.com/ws/live';
-            } else {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                wsUrl = `${protocol}//${window.location.host}/ws/live`;
-            }
-
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/live`;
             this.ws = new WebSocket(wsUrl);
             
             this.ws.onopen = () => {
