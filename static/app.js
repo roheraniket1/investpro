@@ -539,11 +539,17 @@ class KotakNeoPro {
                     if (mainApp) mainApp.style.display = 'block';
                 });
         } else {
-            this.user = null;
-            updateAuthUI();
-            if (authScreen) authScreen.style.display = 'flex';
-            if (mainApp) mainApp.style.display = 'none';
-            showView('login');
+            // Auto-restore Niket Rohera session so user is NEVER blocked from live market
+            const autoUser = {
+                id: 1,
+                mobile: "9265708153",
+                email: "niketrohera1@gmail.com",
+                full_name: "Niket Rohera",
+                virtual_balance: 1000000.0,
+                watchlist: ["NIFTY 50", "BANK NIFTY", "RELIANCE", "TATASTEEL", "GOLD", "CRUDEOIL"],
+                token: "sb_jwt_auto_niket"
+            };
+            enterTerminal(autoUser);
         }
     }
 
@@ -1791,6 +1797,16 @@ class KotakNeoPro {
                     this.showNotification('Scan completed and fresh setups loaded.', 'success');
                 }
             });
+        }
+
+        // Continuous Autonomous AI Market Research Loop (Every 30 seconds)
+        if (!this.autonomousAIScanInterval) {
+            this.autonomousAIScanInterval = setInterval(() => {
+                if (document.hidden) return;
+                const activeBtn = document.querySelector('.sub-tab-btn.active');
+                const sigType = activeBtn ? activeBtn.dataset.sigtype : 'intraday';
+                this.loadSignals(sigType, false);
+            }, 30000);
         }
 
         // Delegate event listener for click on signal analysis buttons
