@@ -914,22 +914,24 @@ class KotakNeoPro {
         this.currentSearchCategory = '';
 
         const INSTANT_SCRIPS = [
-            { symbol: "NIFTY 50", name: "NIFTY 50 Index", exchange: "NSE", category_badge: "📊 Index", ltp: 24150.0 },
-            { symbol: "BANK NIFTY", name: "NIFTY Bank Index", exchange: "NSE", category_badge: "📊 Index", ltp: 51200.0 },
-            { symbol: "FINNIFTY", name: "NIFTY Financial Services Index", exchange: "NSE", category_badge: "📊 Index", ltp: 23800.0 },
-            { symbol: "SENSEX", name: "BSE SENSEX Index", exchange: "BSE", category_badge: "📊 Index", ltp: 79800.0 },
-            { symbol: "MIDCPNIFTY", name: "NIFTY Midcap Select Index", exchange: "NSE", category_badge: "📊 Index", ltp: 12400.0 },
-            { symbol: "RELIANCE", name: "Reliance Industries Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1291.20 },
-            { symbol: "TCS", name: "Tata Consultancy Services Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 2248.60 },
-            { symbol: "HDFCBANK", name: "HDFC Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 712.40 },
-            { symbol: "ICICIBANK", name: "ICICI Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1444.10 },
-            { symbol: "INFY", name: "Infosys Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1109.0 },
-            { symbol: "BHARTIARTL", name: "Bharti Airtel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1899.40 },
-            { symbol: "SBIN", name: "State Bank of India", exchange: "NSE", category_badge: "📈 Stock", ltp: 1047.20 },
-            { symbol: "ITC", name: "ITC Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 269.25 },
+            { symbol: "NIFTY 50", name: "NIFTY 50 Index", exchange: "NSE", category_badge: "📊 Index", ltp: 23873.45 },
+            { symbol: "BANK NIFTY", name: "NIFTY Bank Index", exchange: "NSE", category_badge: "📊 Index", ltp: 57380.60 },
+            { symbol: "FINNIFTY", name: "NIFTY Financial Services Index", exchange: "NSE", category_badge: "📊 Index", ltp: 25420.0 },
+            { symbol: "SENSEX", name: "BSE SENSEX Index", exchange: "BSE", category_badge: "📊 Index", ltp: 76152.86 },
+            { symbol: "MIDCPNIFTY", name: "NIFTY Midcap Select Index", exchange: "NSE", category_badge: "📊 Index", ltp: 13150.0 },
+            { symbol: "RELIANCE", name: "Reliance Industries Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1302.50 },
+            { symbol: "TCS", name: "Tata Consultancy Services Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 2320.10 },
+            { symbol: "HDFCBANK", name: "HDFC Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 706.65 },
+            { symbol: "ICICIBANK", name: "ICICI Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1430.00 },
+            { symbol: "INFY", name: "Infosys Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1130.30 },
+            { symbol: "BHARTIARTL", name: "Bharti Airtel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1869.00 },
+            { symbol: "SBIN", name: "State Bank of India", exchange: "NSE", category_badge: "📈 Stock", ltp: 1023.40 },
+            { symbol: "ITC", name: "ITC Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 263.00 },
             { symbol: "LT", name: "Larsen & Toubro Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 4044.90 },
-            { symbol: "TATASTEEL", name: "Tata Steel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 154.20 },
-            { symbol: "TATAMOTORS", name: "Tata Motors Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 980.0 },
+            { symbol: "TATASTEEL", name: "Tata Steel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 184.20 },
+            { symbol: "TATAMOTORS", name: "Tata Motors Limited (TMCV)", exchange: "NSE", category_badge: "📈 Stock", ltp: 460.35 },
+            { symbol: "TMCV", name: "Tata Motors Commercial Vehicles", exchange: "NSE", category_badge: "📈 Stock", ltp: 460.35 },
+            { symbol: "TMPV", name: "Tata Motors Passenger Vehicles", exchange: "NSE", category_badge: "📈 Stock", ltp: 315.25 },
             { symbol: "ADANIENT", name: "Adani Enterprises Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 2780.0 },
             { symbol: "ADANIPORTS", name: "Adani Ports and SEZ Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1340.0 },
             { symbol: "BAJFINANCE", name: "Bajaj Finance Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1089.50 },
@@ -940,7 +942,7 @@ class KotakNeoPro {
             { symbol: "WIPRO", name: "Wipro Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 540.0 },
             { symbol: "JSWSTEEL", name: "JSW Steel Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 940.0 },
             { symbol: "HINDALCO", name: "Hindalco Industries Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1034.0 },
-            { symbol: "GPPL", name: "Gujarat Pipavav Port Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 171.15 },
+            { symbol: "GPPL", name: "Gujarat Pipavav Port Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 165.43 },
             { symbol: "ZOMATO", name: "Zomato Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 260.0 },
             { symbol: "CANBK", name: "Canara Bank", exchange: "NSE", category_badge: "📈 Stock", ltp: 112.0 },
             { symbol: "PNB", name: "Punjab National Bank", exchange: "NSE", category_badge: "📈 Stock", ltp: 108.0 },
@@ -948,14 +950,14 @@ class KotakNeoPro {
             { symbol: "JIOFIN", name: "Jio Financial Services Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 320.0 },
             { symbol: "KOTAKBANK", name: "Kotak Mahindra Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1820.0 },
             { symbol: "AXISBANK", name: "Axis Bank Limited", exchange: "NSE", category_badge: "📈 Stock", ltp: 1180.0 },
-            { symbol: "GOLD", name: "Gold 1 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 72400.0 },
-            { symbol: "GOLDM", name: "Gold Mini 100g MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 72450.0 },
-            { symbol: "SILVER", name: "Silver 30 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 84500.0 },
-            { symbol: "SILVERM", name: "Silver Mini 5 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 84510.0 },
-            { symbol: "SILVERMIC", name: "Silver Micro 1 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 84520.0 },
-            { symbol: "CRUDEOIL", name: "Crude Oil 100 BBL MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 7686.0 },
-            { symbol: "CRUDEOILM", name: "Crude Oil Mini 10 BBL MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 7686.0 },
-            { symbol: "NATURALGAS", name: "Natural Gas 1250 MMBTU MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 185.20 },
+            { symbol: "GOLD", name: "Gold 1 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 128145.0 },
+            { symbol: "GOLDM", name: "Gold Mini 100g MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 128145.0 },
+            { symbol: "SILVER", name: "Silver 30 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 182500.0 },
+            { symbol: "SILVERM", name: "Silver Mini 5 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 182500.0 },
+            { symbol: "SILVERMIC", name: "Silver Micro 1 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 182500.0 },
+            { symbol: "CRUDEOIL", name: "Crude Oil 100 BBL MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 7795.50 },
+            { symbol: "CRUDEOILM", name: "Crude Oil Mini 10 BBL MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 7795.50 },
+            { symbol: "NATURALGAS", name: "Natural Gas 1250 MMBTU MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 244.26 },
             { symbol: "COPPER", name: "Copper 2500 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 795.40 },
             { symbol: "ZINC", name: "Zinc 5000 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 265.0 },
             { symbol: "ALUMINIUM", name: "Aluminium 5000 KG MCX Commodity", exchange: "MCX", category_badge: "🛢️ Commodity", ltp: 228.0 }
@@ -969,11 +971,14 @@ class KotakNeoPro {
             }
             const qUpper = rawVal.toUpperCase();
 
-            // 1. Instant 0ms Local Filter
+            // 1. Instant 0ms Local Filter with live quote overlay
             const instantMatches = INSTANT_SCRIPS.filter(s => 
                 s.symbol.toUpperCase().includes(qUpper) || 
                 s.name.toUpperCase().includes(qUpper)
-            );
+            ).map(s => {
+                const live = this.latestQuotesCache ? (this.latestQuotesCache[s.symbol]?.ltp || this.latestQuotesCache[s.symbol.toUpperCase()]?.ltp) : null;
+                return live ? { ...s, ltp: live } : s;
+            });
 
             if (instantMatches.length > 0) {
                 this.renderSearchDropdown(instantMatches, dd, (selectedSym) => {
@@ -1161,7 +1166,7 @@ class KotakNeoPro {
             const badgeBorder = item.exchange === 'MCX' ? 'rgba(245,158,11,0.3)' : (item.category === 'OPTION' ? 'rgba(192,132,252,0.3)' : (item.category === 'FUTURE' ? 'rgba(56,189,248,0.3)' : 'rgba(52,211,153,0.3)'));
             
             const cachedLtp = this.latestQuotesCache ? (this.latestQuotesCache[item.symbol]?.ltp || this.latestQuotesCache[item.symbol.toUpperCase()]?.ltp) : null;
-            const ltpVal = (item.ltp && Number(item.ltp) > 0) ? Number(item.ltp) : (cachedLtp || (item.symbol === 'GPPL' ? 171.15 : null));
+            const ltpVal = cachedLtp || ((item.ltp && Number(item.ltp) > 0) ? Number(item.ltp) : null);
             const ltpText = ltpVal ? `₹${this.formatNumber(ltpVal)}` : '--';
             const displayName = item.name && item.name !== item.symbol ? item.name : (item.trading_symbol || item.symbol);
             
@@ -1929,23 +1934,35 @@ class KotakNeoPro {
             if (signals.length === 0) grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color: var(--text-muted)">No signals found for this timeframe. Click Refresh to scan now.</div>';
             if (forceRefresh) this.showNotification(`Fresh scan complete: Loaded ${signals.length} trade signals`, 'success');
         } catch (err) {
-            // Mock
+            // Dynamic fallback using live quote cache
             setTimeout(() => {
+                const getLtp = (sym, fallback) => (this.latestQuotesCache ? (this.latestQuotesCache[sym]?.ltp || this.latestQuotesCache[sym.toUpperCase()]?.ltp) : null) || fallback;
+                const relLtp = getLtp('RELIANCE', 1302.50);
+                const tmcvLtp = getLtp('TMCV', 460.35);
+                const gpplLtp = getLtp('GPPL', 165.43);
+                const tsLtp = getLtp('TATASTEEL', 184.20);
+                const nfLtp = getLtp('NIFTY 50', 23873.45);
+                const bnfLtp = getLtp('BANK NIFTY', 57380.60);
+
                 if (type === 'futures') {
                     this.renderSignals([
-                        { symbol: 'NIFTY-FUT', company_name: 'NIFTY 50 Futures', ltp: 24510, signal: 'BUY', entry: 24500, target: 24700, sl: 24380, reason: 'Bullish Flag Breakout' },
-                        { symbol: 'BANKNIFTY-FUT', company_name: 'BANK NIFTY Futures', ltp: 51220, signal: 'BUY', entry: 51200, target: 51600, sl: 51000, reason: 'Double Bottom near Support' },
-                        { symbol: 'RELIANCE-FUT', company_name: 'Reliance Industries Futures', ltp: 2515, signal: 'BUY', entry: 2510, target: 2560, sl: 2480, reason: 'High Volume Trend Breakout' }
+                        { symbol: 'NIFTY-FUT', company_name: 'NIFTY 50 Futures', ltp: Number((nfLtp + 35).toFixed(2)), signal: 'BUY', entry: Number((nfLtp + 35).toFixed(2)), target: Number((nfLtp + 180).toFixed(2)), sl: Number((nfLtp - 70).toFixed(2)), reason: 'Bullish Flag Breakout' },
+                        { symbol: 'BANKNIFTY-FUT', company_name: 'BANK NIFTY Futures', ltp: Number((bnfLtp + 90).toFixed(2)), signal: 'BUY', entry: Number((bnfLtp + 90).toFixed(2)), target: Number((bnfLtp + 500).toFixed(2)), sl: Number((bnfLtp - 200).toFixed(2)), reason: 'Double Bottom near Support' },
+                        { symbol: 'RELIANCE-FUT', company_name: 'Reliance Industries Futures', ltp: Number((relLtp + 5).toFixed(2)), signal: 'BUY', entry: Number((relLtp + 5).toFixed(2)), target: Number((relLtp * 1.03).toFixed(2)), sl: Number((relLtp * 0.985).toFixed(2)), reason: 'High Volume Trend Breakout' }
                     ]);
                 } else if (type === 'options') {
+                    const nfAtm = Math.round(nfLtp / 50) * 50;
+                    const bnfAtm = Math.round(bnfLtp / 100) * 100;
                     this.renderSignals([
-                        { symbol: 'NIFTY 24500 CE', company_name: 'NIFTY 50 24500 Call', ltp: 124.50, signal: 'BUY', entry: 120, target: 180, sl: 90, reason: 'Call Buying on Breakout' },
-                        { symbol: 'BANKNIFTY 51000 PE', company_name: 'BANK NIFTY 51000 Put', ltp: 215.00, signal: 'BUY', entry: 210, target: 320, sl: 160, reason: 'Rejection at Upper Band' }
+                        { symbol: `NIFTY ${nfAtm} CE`, company_name: `NIFTY 50 ${nfAtm} Call`, ltp: 135.00, signal: 'BUY', entry: 130, target: 195, sl: 95, reason: 'Call Buying on Breakout' },
+                        { symbol: `BANKNIFTY ${bnfAtm} CE`, company_name: `BANK NIFTY ${bnfAtm} Call`, ltp: 280.00, signal: 'BUY', entry: 275, target: 410, sl: 205, reason: 'Bullish Momentum Expansion' }
                     ]);
                 } else {
                     this.renderSignals([
-                        { symbol: 'RELIANCE', company_name: 'Reliance Industries Ltd', ltp: 2468.50, signal: 'BUY', entry: 2465.0, target: 2580.0, sl: 2420.0, reason: 'Breakout above 20 EMA' },
-                        { symbol: 'TCS', company_name: 'Tata Consultancy Services', ltp: 3855.00, signal: 'BUY', entry: 3850.0, target: 4020.0, sl: 3780.0, reason: 'RSI Oversold Reversal' }
+                        { symbol: 'RELIANCE', company_name: 'Reliance Industries Ltd', ltp: relLtp, signal: 'BUY', entry: relLtp, target: Number((relLtp * 1.025).toFixed(2)), sl: Number((relLtp * 0.99).toFixed(2)), reason: 'Breakout above 20 EMA' },
+                        { symbol: 'GPPL', company_name: 'Gujarat Pipavav Port Ltd', ltp: gpplLtp, signal: 'BUY', entry: gpplLtp, target: Number((gpplLtp * 1.038).toFixed(2)), sl: Number((gpplLtp * 0.985).toFixed(2)), reason: 'Ascending Triangle Breakout' },
+                        { symbol: 'TMCV', company_name: 'Tata Motors Commercial Vehicles', ltp: tmcvLtp, signal: 'BUY', entry: tmcvLtp, target: Number((tmcvLtp * 1.03).toFixed(2)), sl: Number((tmcvLtp * 0.988).toFixed(2)), reason: 'Oversold Support Reversal' },
+                        { symbol: 'TATASTEEL', company_name: 'Tata Steel Limited', ltp: tsLtp, signal: 'BUY', entry: tsLtp, target: Number((tsLtp * 1.028).toFixed(2)), sl: Number((tsLtp * 0.989).toFixed(2)), reason: 'Trend Continuation' }
                     ]);
                 }
             }, 500);

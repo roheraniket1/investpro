@@ -58,34 +58,34 @@ const SYMBOL_MAP = {
 };
 
 const SEARCH_DATABASE = [
-  { symbol: "NIFTY 50", name: "Nifty 50 Index", exchange: "NSE", segment: "INDEX", category_badge: "📊 Index", ltp: 24175.65, lot_size: 25 },
-  { symbol: "BANK NIFTY", name: "Bank Nifty Index", exchange: "NSE", segment: "INDEX", category_badge: "📊 Index", ltp: 57496.30, lot_size: 15 },
-  { symbol: "NIFTY IT", name: "Nifty IT Sector", exchange: "NSE", segment: "INDEX", category_badge: "📊 Index", ltp: 31281.70, lot_size: 25 },
-  { symbol: "SENSEX", name: "BSE Sensex Index", exchange: "BSE", segment: "INDEX", category_badge: "📊 Index", ltp: 77264.51, lot_size: 10 },
-  { symbol: "RELIANCE", name: "Reliance Industries Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1310.10, lot_size: 1 },
-  { symbol: "TATAMOTORS", name: "Tata Motors Limited (TMCV)", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 466.30, lot_size: 1 },
-  { symbol: "TMCV", name: "Tata Motors Commercial Vehicles", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 466.30, lot_size: 1 },
+  { symbol: "NIFTY 50", name: "Nifty 50 Index", exchange: "NSE", segment: "INDEX", category_badge: "📊 Index", ltp: 23873.45, lot_size: 25 },
+  { symbol: "BANK NIFTY", name: "Bank Nifty Index", exchange: "NSE", segment: "INDEX", category_badge: "📊 Index", ltp: 57380.60, lot_size: 15 },
+  { symbol: "NIFTY IT", name: "Nifty IT Sector", exchange: "NSE", segment: "INDEX", category_badge: "📊 Index", ltp: 30838.85, lot_size: 25 },
+  { symbol: "SENSEX", name: "BSE Sensex Index", exchange: "BSE", segment: "INDEX", category_badge: "📊 Index", ltp: 76152.86, lot_size: 10 },
+  { symbol: "RELIANCE", name: "Reliance Industries Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1302.50, lot_size: 1 },
+  { symbol: "TATAMOTORS", name: "Tata Motors Limited (TMCV)", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 460.35, lot_size: 1 },
+  { symbol: "TMCV", name: "Tata Motors Commercial Vehicles", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 460.35, lot_size: 1 },
   { symbol: "TMPV", name: "Tata Motors Passenger Vehicles", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 315.25, lot_size: 1 },
-  { symbol: "TATASTEEL", name: "Tata Steel Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 184.50, lot_size: 1 },
-  { symbol: "TCS", name: "Tata Consultancy Services Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 2248.60, lot_size: 1 },
-  { symbol: "INFY", name: "Infosys Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1109.00, lot_size: 1 },
-  { symbol: "HDFCBANK", name: "HDFC Bank Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 712.40, lot_size: 1 },
-  { symbol: "ICICIBANK", name: "ICICI Bank Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1444.10, lot_size: 1 },
-  { symbol: "SBIN", name: "State Bank of India", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1047.20, lot_size: 1 },
-  { symbol: "BHARTIARTL", name: "Bharti Airtel Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1899.40, lot_size: 1 },
-  { symbol: "ITC", name: "ITC Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 269.25, lot_size: 1 },
+  { symbol: "TATASTEEL", name: "Tata Steel Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 184.20, lot_size: 1 },
+  { symbol: "TCS", name: "Tata Consultancy Services Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 2320.10, lot_size: 1 },
+  { symbol: "INFY", name: "Infosys Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1130.30, lot_size: 1 },
+  { symbol: "HDFCBANK", name: "HDFC Bank Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 706.65, lot_size: 1 },
+  { symbol: "ICICIBANK", name: "ICICI Bank Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1430.00, lot_size: 1 },
+  { symbol: "SBIN", name: "State Bank of India", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1023.40, lot_size: 1 },
+  { symbol: "BHARTIARTL", name: "Bharti Airtel Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1869.00, lot_size: 1 },
+  { symbol: "ITC", name: "ITC Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 263.00, lot_size: 1 },
   { symbol: "LT", name: "Larsen & Toubro Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 4044.90, lot_size: 1 },
   { symbol: "MARUTI", name: "Maruti Suzuki India Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 12400.00, lot_size: 1 },
   { symbol: "BAJFINANCE", name: "Bajaj Finance Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1089.50, lot_size: 1 },
   { symbol: "ZOMATO", name: "Zomato Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 260.00, lot_size: 1 },
   { symbol: "CANBK", name: "Canara Bank", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 112.00, lot_size: 1 },
-  { symbol: "GPPL", name: "Gujarat Pipavav Port Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 171.15, lot_size: 1 },
+  { symbol: "GPPL", name: "Gujarat Pipavav Port Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 165.43, lot_size: 1 },
   { symbol: "HINDALCO", name: "Hindalco Industries Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1034.00, lot_size: 1 },
   { symbol: "SUNPHARMA", name: "Sun Pharmaceutical Industries", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 1720.00, lot_size: 1 },
   { symbol: "TITAN", name: "Titan Company Limited", exchange: "NSE", segment: "EQUITY", category_badge: "📈 Stock", ltp: 3480.00, lot_size: 1 },
-  { symbol: "GOLD", name: "MCX Gold (per 10 grams)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 69502.66, lot_size: 1 },
-  { symbol: "SILVER", name: "MCX Silver (per 1 kg)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 84500.00, lot_size: 1 },
-  { symbol: "CRUDEOIL", name: "MCX Crude Oil (per barrel)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 6996.44, lot_size: 100 },
+  { symbol: "GOLD", name: "MCX Gold (per 10 grams)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 128145.00, lot_size: 1 },
+  { symbol: "SILVER", name: "MCX Silver (per 1 kg)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 182500.00, lot_size: 1 },
+  { symbol: "CRUDEOIL", name: "MCX Crude Oil (per barrel)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 7795.50, lot_size: 100 },
   { symbol: "NATURALGAS", name: "MCX Natural Gas (per MMBtu)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 244.26, lot_size: 1250 },
   { symbol: "COPPER", name: "MCX Copper (per 1 kg)", exchange: "MCX", segment: "COMMODITY", category_badge: "🛢️ Commodity", ltp: 795.40, lot_size: 2500 }
 ];
@@ -108,12 +108,10 @@ function convertToMcxInr(symbol, usdPrice) {
   const sym = symbol.toUpperCase();
   const usd_inr = USD_INR_RATE;
   if (sym.startsWith("GOLD")) {
-    const val = (usdPrice * usd_inr / 31.1035 * 10 * 1.06);
-    return Number((val > 100000 ? val * 0.54 : val).toFixed(2));
+    return Number((usdPrice * usd_inr / 31.1035 * 10 * 1.06).toFixed(2));
   }
   if (sym.startsWith("SILVER")) {
-    const val = (usdPrice * usd_inr * 32.1507);
-    return Number((val > 120000 ? val * 0.44 : val).toFixed(2));
+    return Number((usdPrice * usd_inr * 32.1507 * 1.06).toFixed(2));
   }
   if (sym.startsWith("CRUDE")) {
     return Number((usdPrice * usd_inr).toFixed(2));
@@ -122,8 +120,7 @@ function convertToMcxInr(symbol, usdPrice) {
     return Number((usdPrice * usd_inr).toFixed(2));
   }
   if (sym.startsWith("COPPER")) {
-    const val = (usdPrice * usd_inr * 2.20462);
-    return Number((val > 1000 ? val * 0.65 : val).toFixed(2));
+    return Number((usdPrice * usd_inr * 2.20462).toFixed(2));
   }
   return usdPrice;
 }
@@ -708,17 +705,21 @@ export async function onRequest(context) {
 
   // 5. DAILY AI MARKET PULSE & TOP 3 PICKS
   if (path === "/api/ai/daily-briefing") {
+    const relLtp = EDGE_QUOTE_CACHE.get("RELIANCE")?.data?.ltp || 1302.50;
+    const tmcvLtp = EDGE_QUOTE_CACHE.get("TMCV")?.data?.ltp || 460.35;
+    const gpplLtp = EDGE_QUOTE_CACHE.get("GPPL")?.data?.ltp || 165.43;
+
     const top3 = [
       {
         symbol: "RELIANCE",
         name: "Reliance Industries Limited",
-        ltp: 1310.10,
+        ltp: relLtp,
         change_pct: 0.45,
         verdict: "STRONG BUY",
         conviction: "92%",
-        entry: 1310.00,
-        target: 1365.00,
-        stoploss: 1285.00,
+        entry: relLtp,
+        target: Number((relLtp * 1.042).toFixed(2)),
+        stoploss: Number((relLtp * 0.98).toFixed(2)),
         profit_pct: "+4.2%",
         pattern: "Momentum Range Breakout",
         valuation: "Large Cap (P/E 24.5)",
@@ -728,13 +729,13 @@ export async function onRequest(context) {
       {
         symbol: "TMCV",
         name: "Tata Motors Commercial Vehicles",
-        ltp: 466.30,
+        ltp: tmcvLtp,
         change_pct: -1.20,
         verdict: "BUY",
         conviction: "88%",
-        entry: 465.00,
-        target: 495.00,
-        stoploss: 450.00,
+        entry: tmcvLtp,
+        target: Number((tmcvLtp * 1.064).toFixed(2)),
+        stoploss: Number((tmcvLtp * 0.97).toFixed(2)),
         profit_pct: "+6.4%",
         pattern: "Demand Zone Pullback Bounce",
         valuation: "Large Cap (P/E 16.2)",
@@ -744,13 +745,13 @@ export async function onRequest(context) {
       {
         symbol: "GPPL",
         name: "Gujarat Pipavav Port Limited",
-        ltp: 171.15,
+        ltp: gpplLtp,
         change_pct: 1.85,
         verdict: "STRONG BUY",
         conviction: "89%",
-        entry: 171.00,
-        target: 184.00,
-        stoploss: 165.00,
+        entry: gpplLtp,
+        target: Number((gpplLtp * 1.076).toFixed(2)),
+        stoploss: Number((gpplLtp * 0.965).toFixed(2)),
         profit_pct: "+7.6%",
         pattern: "Ascending Triangle Breakout",
         valuation: "Mid Cap (P/E 19.8)",
@@ -863,119 +864,51 @@ export async function onRequest(context) {
     }
 
     // Return signals based on type
+    // Dynamic signal builder using live Edge quotes
+    const makeSig = (sym, name, sigType, pattern, reason, profitPct, slPct, expDays, trgTime, defLtp) => {
+      const live = EDGE_QUOTE_CACHE.get(sym)?.data?.ltp;
+      const ltp = live || defLtp;
+      const entry = ltp;
+      const target = Number((ltp * (1 + profitPct / 100)).toFixed(2));
+      const stoploss = Number((ltp * (1 - slPct / 100)).toFixed(2));
+      const rr = ((target - entry) / (entry - stoploss)).toFixed(1);
+      return {
+        symbol: sym,
+        company_name: name,
+        signal_type: sigType,
+        type: "BUY",
+        direction: "BUY",
+        ltp: ltp,
+        entry: entry,
+        target: target,
+        stoploss: stoploss,
+        score: 90.0,
+        risk_reward: `1:${rr}`,
+        confidence: "High",
+        reason: `${reason} Target: +${profitPct}%`,
+        pattern: pattern,
+        expected_days: expDays,
+        trigger_candle_time: trgTime
+      };
+    };
+
     const intradaySignals = [
-      {
-        symbol: "RELIANCE",
-        company_name: "Reliance Industries Limited",
-        signal_type: "intraday",
-        type: "BUY",
-        direction: "BUY",
-        ltp: 1310.10,
-        entry: 1310.00,
-        target: 1335.00,
-        stoploss: 1296.00,
-        score: 91.5,
-        risk_reward: "1:2.5",
-        confidence: "High",
-        reason: "Bullish momentum breakout above 20 EMA with expanding buy volume. Target: +1.9%",
-        pattern: "Opening Range Breakout",
-        expected_days: 1,
-        trigger_candle_time: "10:15 AM"
-      },
-      {
-        symbol: "TMCV",
-        company_name: "Tata Motors Commercial Vehicles",
-        signal_type: "intraday",
-        type: "BUY",
-        direction: "BUY",
-        ltp: 466.30,
-        entry: 465.50,
-        target: 478.00,
-        stoploss: 459.00,
-        score: 87.0,
-        risk_reward: "1:2.3",
-        confidence: "High",
-        reason: "Oversold demand bounce near institutional S1 support. Target: +2.7%",
-        pattern: "Hammer Reversal",
-        expected_days: 1,
-        trigger_candle_time: "11:30 AM"
-      },
-      {
-        symbol: "GPPL",
-        company_name: "Gujarat Pipavav Port Limited",
-        signal_type: "intraday",
-        type: "BUY",
-        direction: "BUY",
-        ltp: 171.15,
-        entry: 171.00,
-        target: 177.50,
-        stoploss: 167.50,
-        score: 89.2,
-        risk_reward: "1:2.6",
-        confidence: "High",
-        reason: "High volume consolidation breakout above morning high. Target: +3.8%",
-        pattern: "Ascending Triangle",
-        expected_days: 1,
-        trigger_candle_time: "09:45 AM"
-      },
-      {
-        symbol: "TATASTEEL",
-        company_name: "Tata Steel Limited",
-        signal_type: "intraday",
-        type: "BUY",
-        direction: "BUY",
-        ltp: 184.50,
-        entry: 184.00,
-        target: 189.00,
-        stoploss: 181.50,
-        score: 84.5,
-        risk_reward: "1:2.2",
-        confidence: "Medium",
-        reason: "Metal sector momentum continuation above VWAP. Target: +2.7%",
-        pattern: "Bullish Trend Flag",
-        expected_days: 1,
-        trigger_candle_time: "10:45 AM"
-      }
+      makeSig("RELIANCE", "Reliance Industries Limited", "intraday", "Opening Range Breakout", "Bullish momentum breakout above 20 EMA with expanding buy volume.", 2.5, 1.0, 1, "10:15 AM", 1302.50),
+      makeSig("TMCV", "Tata Motors Commercial Vehicles", "intraday", "Hammer Reversal", "Oversold demand bounce near institutional S1 support.", 3.0, 1.2, 1, "11:30 AM", 460.35),
+      makeSig("GPPL", "Gujarat Pipavav Port Limited", "intraday", "Ascending Triangle", "High volume consolidation breakout above morning high.", 3.8, 1.5, 1, "09:45 AM", 165.43),
+      makeSig("TATASTEEL", "Tata Steel Limited", "intraday", "Bullish Trend Flag", "Metal sector momentum continuation above VWAP.", 2.8, 1.1, 1, "10:45 AM", 184.20)
     ];
 
     const shorttermSignals = [
-      {
-        symbol: "HDFCBANK",
-        company_name: "HDFC Bank Limited",
-        signal_type: "shortterm",
-        type: "BUY",
-        direction: "BUY",
-        ltp: 712.40,
-        entry: 712.00,
-        target: 755.00,
-        stoploss: 690.00,
-        score: 89.0,
-        risk_reward: "1:2.8",
-        confidence: "High",
-        reason: "Golden cross formation on 4H chart with institutional accumulation. Target: +6.0%",
-        pattern: "Double Bottom Reversal",
-        expected_days: 7,
-        trigger_candle_time: "Daily Close"
-      },
-      {
-        symbol: "GPPL",
-        company_name: "Gujarat Pipavav Port Limited",
-        signal_type: "shortterm",
-        type: "BUY",
-        direction: "BUY",
-        ltp: 171.15,
-        entry: 171.00,
-        target: 188.00,
-        stoploss: 163.00,
-        score: 93.0,
-        risk_reward: "1:2.7",
-        confidence: "High",
-        reason: "Multi-week horizontal resistance breakout with 2.4x volume surge. Target: +9.9%",
-        pattern: "Cup & Handle Breakout",
-        expected_days: 10,
-        trigger_candle_time: "Daily Close"
-      }
+      makeSig("HDFCBANK", "HDFC Bank Limited", "shortterm", "Double Bottom Reversal", "Golden cross formation on 4H chart with institutional accumulation.", 6.0, 2.5, 7, "Daily Close", 706.65),
+      makeSig("GPPL", "Gujarat Pipavav Port Limited", "shortterm", "Cup & Handle Breakout", "Multi-week horizontal resistance breakout with 2.4x volume surge.", 7.5, 2.8, 10, "Daily Close", 165.43),
+      makeSig("RELIANCE", "Reliance Industries Limited", "shortterm", "Range Breakout", "Institutional buying above 50 SMA with positive MACD histogram.", 5.5, 2.0, 14, "Daily Close", 1302.50)
     ];
+
+    const niftyLtp = EDGE_QUOTE_CACHE.get("NIFTY 50")?.data?.ltp || 23873.45;
+    const bnfLtp = EDGE_QUOTE_CACHE.get("BANK NIFTY")?.data?.ltp || 57380.60;
+    const niftyAtm = Math.round(niftyLtp / 50) * 50;
+    const bnfAtm = Math.round(bnfLtp / 100) * 100;
 
     const futuresSignals = [
       {
@@ -984,10 +917,10 @@ export async function onRequest(context) {
         signal_type: "futures",
         type: "BUY",
         direction: "BUY",
-        ltp: 24220.00,
-        entry: 24200.00,
-        target: 24450.00,
-        stoploss: 24080.00,
+        ltp: Number((niftyLtp + 35).toFixed(2)),
+        entry: Number((niftyLtp + 35).toFixed(2)),
+        target: Number((niftyLtp + 180).toFixed(2)),
+        stoploss: Number((niftyLtp - 70).toFixed(2)),
         score: 88.0,
         risk_reward: "1:2.4",
         confidence: "High",
@@ -1002,10 +935,10 @@ export async function onRequest(context) {
         signal_type: "futures",
         type: "BUY",
         direction: "BUY",
-        ltp: 57550.00,
-        entry: 57500.00,
-        target: 58200.00,
-        stoploss: 57150.00,
+        ltp: Number((bnfLtp + 90).toFixed(2)),
+        entry: Number((bnfLtp + 90).toFixed(2)),
+        target: Number((bnfLtp + 500).toFixed(2)),
+        stoploss: Number((bnfLtp - 200).toFixed(2)),
         score: 86.5,
         risk_reward: "1:2.3",
         confidence: "High",
@@ -1018,8 +951,8 @@ export async function onRequest(context) {
 
     const optionsSignals = [
       {
-        symbol: "NIFTY 24200 CE",
-        company_name: "NIFTY 50 24200 Call Option",
+        symbol: `NIFTY ${niftyAtm} CE`,
+        company_name: `NIFTY 50 ${niftyAtm} Call Option`,
         signal_type: "options",
         type: "BUY",
         direction: "BUY",
@@ -1036,8 +969,8 @@ export async function onRequest(context) {
         trigger_candle_time: "Live"
       },
       {
-        symbol: "BANKNIFTY 57500 CE",
-        company_name: "BANK NIFTY 57500 Call Option",
+        symbol: `BANKNIFTY ${bnfAtm} CE`,
+        company_name: `BANK NIFTY ${bnfAtm} Call Option`,
         signal_type: "options",
         type: "BUY",
         direction: "BUY",
@@ -1048,7 +981,7 @@ export async function onRequest(context) {
         score: 88.0,
         risk_reward: "1:2.3",
         confidence: "High",
-        reason: "Aggressive put writing at 57,000 strike creating dynamic upward delta drive.",
+        reason: `Aggressive put writing at ${bnfAtm - 500} strike creating dynamic upward delta drive.`,
         pattern: "Delta Breakout",
         expected_days: 2,
         trigger_candle_time: "Live"
@@ -1143,9 +1076,9 @@ export async function onRequest(context) {
       status: "ok",
       alerts: [
         "🟢 InvestPro 100% Serverless Edge Terminal Active across NSE & MCX",
-        "⚡ RELIANCE BUY breakout confirmed above ₹1,310 (Target: ₹1,365)",
-        "📐 GPPL Ascending Triangle Breakout active with 2.4x volume surge",
-        "🎯 TMCV holding institutional support at ₹465 with oversold RSI bounce",
+        "⚡ RELIANCE BUY breakout confirmed above ₹1,302 (Target: ₹1,355)",
+        "📐 GPPL Ascending Triangle Breakout active at ₹165.43 with 2.4x volume surge",
+        "🎯 TMCV holding institutional support at ₹460 with oversold RSI bounce",
         "💰 Virtual ₹10,00,000.00 Capital Portfolio synchronized with Supabase Cloud"
       ]
     });
@@ -1154,13 +1087,16 @@ export async function onRequest(context) {
   // 11. SEARCH AUTOCOMPLETE ENDPOINT
   if (path === "/api/search") {
     const q = (url.searchParams.get("q") || "").toUpperCase().trim();
-    if (!q) {
-      return jsonResponse({ count: SEARCH_DATABASE.length, results: SEARCH_DATABASE });
-    }
-    const filtered = SEARCH_DATABASE.filter(item => 
-      item.symbol.toUpperCase().includes(q) || item.name.toUpperCase().includes(q)
-    );
-    return jsonResponse({ count: filtered.length, results: filtered });
+    const source = q 
+      ? SEARCH_DATABASE.filter(item => item.symbol.toUpperCase().includes(q) || item.name.toUpperCase().includes(q))
+      : SEARCH_DATABASE;
+    
+    const enriched = source.map(item => {
+      const cached = EDGE_QUOTE_CACHE.get(item.symbol.toUpperCase())?.data;
+      return cached ? { ...item, ltp: cached.ltp } : item;
+    });
+
+    return jsonResponse({ count: enriched.length, results: enriched });
   }
 
   // 12. SUPABASE DIRECT AUTH (LOGIN, PROFILE, REGISTER, FORGOT)
