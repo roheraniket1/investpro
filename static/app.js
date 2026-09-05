@@ -3398,11 +3398,15 @@ class KotakNeoPro {
             if (!res.ok) return;
             const data = await res.json();
             
-            document.getElementById('paper-balance-val').textContent = this.formatCurrency(data.balance);
-            document.getElementById('paper-total-val').textContent = this.formatCurrency(data.portfolio_value);
+            const balVal = (data.balance !== undefined && !isNaN(data.balance)) ? Number(data.balance) : 1000000.0;
+            const pVal = (data.portfolio_value !== undefined && !isNaN(data.portfolio_value)) ? Number(data.portfolio_value) : balVal;
+            const unPnl = (data.unrealized_pnl !== undefined && !isNaN(data.unrealized_pnl)) ? Number(data.unrealized_pnl) : (pVal - balVal);
+
+            document.getElementById('paper-balance-val').textContent = this.formatCurrency(balVal);
+            document.getElementById('paper-total-val').textContent = this.formatCurrency(pVal);
             
             const availEl = document.getElementById('paper-quick-avail');
-            if (availEl) availEl.textContent = this.formatCurrency(data.balance);
+            if (availEl) availEl.textContent = this.formatCurrency(balVal);
 
             const statusPill = document.getElementById('paper-market-status-pill');
             if (statusPill) {
@@ -3420,10 +3424,10 @@ class KotakNeoPro {
             }
 
             const pnlVal = document.getElementById('paper-pnl-val');
-            pnlVal.textContent = (data.unrealized_pnl >= 0 ? '+' : '') + this.formatCurrency(data.unrealized_pnl);
-            if (data.unrealized_pnl > 0) {
+            pnlVal.textContent = (unPnl >= 0 ? '+' : '') + this.formatCurrency(unPnl);
+            if (unPnl > 0) {
                 pnlVal.style.color = 'var(--bullish-green)';
-            } else if (data.unrealized_pnl < 0) {
+            } else if (unPnl < 0) {
                 pnlVal.style.color = 'var(--bearish-red)';
             } else {
                 pnlVal.style.color = '#a0a6c0';
@@ -3436,18 +3440,25 @@ class KotakNeoPro {
             } else {
                 data.active_positions.forEach(p => {
                     const color = p.direction === 'BUY' ? 'var(--bullish-green)' : 'var(--bearish-red)';
-                    const pnlColor = p.pnl >= 0 ? 'var(--bullish-green)' : 'var(--bearish-red)';
-                    const pnlText = (p.pnl >= 0 ? '+' : '') + this.formatCurrency(p.pnl);
-                    const pnlPctText = (p.pnl_pct >= 0 ? '+' : '') + (p.pnl_pct || 0).toFixed(2) + '%';
+                    const posPnl = (p.pnl !== undefined && !isNaN(p.pnl)) ? Number(p.pnl) : 0;
+                    const posPnlPct = (p.pnl_pct !== undefined && !isNaN(p.pnl_pct)) ? Number(p.pnl_pct) : 0;
+                    const pnlColor = posPnl >= 0 ? 'var(--bullish-green)' : 'var(--bearish-red)';
+                    const pnlText = (posPnl >= 0 ? '+' : '') + this.formatCurrency(posPnl);
+                    const pnlPctText = (posPnlPct >= 0 ? '+' : '') + posPnlPct.toFixed(2) + '%';
                     
+                    const entryVal = Number(p.entry_price) || 0;
+                    const ltpVal = (p.ltp !== undefined && p.ltp !== null && !isNaN(p.ltp)) ? Number(p.ltp) : entryVal;
+                    const targetVal = Number(p.target_price) || 0;
+                    const slVal = Number(p.stoploss_price) || 0;
+
                     const prevLtp = this.prevLtpMap ? this.prevLtpMap[p.id] : null;
                     let ltpFlash = 'color:#fff;';
                     if (prevLtp !== null && prevLtp !== undefined) {
-                        if (p.ltp > prevLtp) ltpFlash = 'color:var(--bullish-green); transition: color 0.3s;';
-                        else if (p.ltp < prevLtp) ltpFlash = 'color:var(--bearish-red); transition: color 0.3s;';
+                        if (ltpVal > prevLtp) ltpFlash = 'color:var(--bullish-green); transition: color 0.3s;';
+                        else if (ltpVal < prevLtp) ltpFlash = 'color:var(--bearish-red); transition: color 0.3s;';
                     }
                     if (!this.prevLtpMap) this.prevLtpMap = {};
-                    this.prevLtpMap[p.id] = p.ltp;
+                    this.prevLtpMap[p.id] = ltpVal;
 
                     const compName = p.company_name || '';
                     activeTbody.innerHTML += `
@@ -3458,10 +3469,10 @@ class KotakNeoPro {
                             </td>
                             <td style="padding:10px;"><span style="color:${color}; background:${p.direction === 'BUY' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'}; padding:3px 8px; border-radius:4px; font-weight:700; font-size:11px;">${p.direction}</span></td>
                             <td style="padding:10px; font-weight:600;">${p.qty}</td>
-                            <td style="padding:10px;">₹${Number(p.entry_price).toFixed(2)}</td>
-                            <td style="padding:10px; font-weight:700; font-size:14px; ${ltpFlash}">₹${Number(p.ltp).toFixed(2)}</td>
-                            <td style="padding:10px; color:var(--bullish-green); font-weight:600;">₹${Number(p.target_price).toFixed(2)}</td>
-                            <td style="padding:10px; color:var(--bearish-red); font-weight:600;">₹${Number(p.stoploss_price).toFixed(2)}</td>
+                            <td style="padding:10px;">₹${entryVal.toFixed(2)}</td>
+                            <td style="padding:10px; font-weight:700; font-size:14px; ${ltpFlash}">₹${ltpVal.toFixed(2)}</td>
+                            <td style="padding:10px; color:var(--bullish-green); font-weight:600;">₹${targetVal.toFixed(2)}</td>
+                            <td style="padding:10px; color:var(--bearish-red); font-weight:600;">₹${slVal.toFixed(2)}</td>
                             <td style="color:${pnlColor}; font-weight:700; padding:10px;">
                                 <div>${pnlText}</div>
                                 <div style="font-size:11px; font-weight:500;">(${pnlPctText})</div>

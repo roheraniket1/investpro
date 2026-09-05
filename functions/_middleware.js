@@ -1258,14 +1258,47 @@ export async function onRequest(context) {
         }
       });
       const trades = sbRes.ok ? await sbRes.json() : [];
+      let balance = 1000000.0;
+      let unrealizedPnl = 0.0;
+
+      const activePositions = await Promise.all(trades.filter(t => t.status === "OPEN").map(async t => {
+        let clean = String(t.symbol || "").toUpperCase();
+        if (clean.includes("TATAMOTORS") || clean.includes("TMCV")) clean = "TMCV";
+        else if (clean.includes("RELIANCE")) clean = "RELIANCE";
+        else if (clean.includes("GPPL")) clean = "GPPL";
+        else if (clean.includes("TATASTEEL")) clean = "TATASTEEL";
+        
+        const q = await fetchQuote(clean);
+        const ltp = q?.ltp || Number(t.entry_price) || 100.0;
+        const entry = Number(t.entry_price) || ltp;
+        const dirMult = t.direction === "BUY" ? 1 : -1;
+        const posPnl = (ltp - entry) * (Number(t.qty) || 1) * dirMult;
+        const posPnlPct = entry > 0 ? ((ltp - entry) / entry) * 100 * dirMult : 0.0;
+        unrealizedPnl += posPnl;
+
+        return {
+          ...t,
+          ltp: Number(ltp.toFixed(2)),
+          pnl: Number(posPnl.toFixed(2)),
+          pnl_pct: Number(posPnlPct.toFixed(2))
+        };
+      }));
+
+      const closedPositions = trades.filter(t => t.status !== "OPEN");
+      const portfolioValue = Number((balance + unrealizedPnl).toFixed(2));
+
       return jsonResponse({
         status: "success",
-        balance: 1000000.0,
-        active_positions: trades.filter(t => t.status === "OPEN"),
-        closed_positions: trades.filter(t => t.status !== "OPEN")
+        balance: balance,
+        portfolio_value: portfolioValue,
+        unrealized_pnl: Number(unrealizedPnl.toFixed(2)),
+        active_positions: activePositions,
+        closed_positions: closedPositions,
+        market_open: true,
+        market_status_nse: "NSE/BSE Market Active • Live Ticks Streaming"
       });
     } catch (e) {
-      return jsonResponse({ status: "success", balance: 1000000.0, active_positions: [], closed_positions: [] });
+      return jsonResponse({ status: "success", balance: 1000000.0, portfolio_value: 1000000.0, unrealized_pnl: 0.0, active_positions: [], closed_positions: [], market_open: true });
     }
   }
 
